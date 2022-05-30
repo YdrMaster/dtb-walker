@@ -1,7 +1,7 @@
 #![no_std]
 #![feature(slice_internals)]
 
-use core::{fmt, slice};
+use core::{fmt, mem, slice};
 
 mod header;
 mod path;
@@ -21,20 +21,58 @@ use walker::Walker;
 pub struct Dtb<'a>(&'a [u8]);
 
 impl Dtb<'static> {
-    /// 构造设备树二进制对象引用。
+    /// 构造设备树二进制对象。
     ///
     /// # Safety
     ///
     /// 如果指针指向一个有效的 DTB 首部，其中描述的整个二进制对象会被切片。
+    #[inline]
     pub unsafe fn from_raw_parts(ptr: *const u8) -> Result<Self, HeaderError> {
-        let header: &FdtHeader = &*ptr.cast();
-        header.verify()?;
-        Ok(Self(slice::from_raw_parts(
-            ptr,
-            header.totalsize.into_u32() as _,
-        )))
+        (*ptr.cast::<FdtHeader>()).verify()?;
+        Ok(Self::from_raw_parts_unchecked(ptr))
     }
 
+    /// 不检查首部正确性，直接构造设备树二进制对象。
+    ///
+    /// # Safety
+    ///
+    /// 假设指针指向一个正确的设备树二进制对象，其首部描述的整个二进制对象会被切片。
+    #[inline]
+    pub unsafe fn from_raw_parts_unchecked(ptr: *const u8) -> Self {
+        Self(slice::from_raw_parts(
+            ptr,
+            (*ptr.cast::<FdtHeader>()).totalsize.into_u32() as _,
+        ))
+    }
+}
+
+pub enum ConvertError {
+    Truncated,
+    Header(HeaderError),
+}
+
+impl<'a> Dtb<'a> {
+    /// 从内存切片安全地创建设备树二进制对象。
+    pub fn from_slice(slice: &'a [u8]) -> Result<Self, ConvertError> {
+        if slice.len() < mem::size_of::<FdtHeader>() {
+            return Err(ConvertError::Truncated);
+        }
+        let header = unsafe { &*slice.as_ptr().cast::<FdtHeader>() };
+        match header.verify() {
+            Ok(()) => {
+                let len = header.totalsize.into_u32() as usize;
+                if len <= slice.len() {
+                    Ok(Self(&slice[..len]))
+                } else {
+                    Err(ConvertError::Truncated)
+                }
+            }
+            Err(e) => Err(ConvertError::Header(e)),
+        }
+    }
+}
+
+impl Dtb<'_> {
     /// 返回整个二进制对象的尺寸。
     #[inline]
     pub const fn total_size(&self) -> usize {
@@ -79,6 +117,7 @@ pub enum DtbObj<'a> {
     Reg(Reg<'a>),
 }
 
+/// 遍历操作。
 pub enum WalkOperation {
     /// 进入子节点
     StepInto,
