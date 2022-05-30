@@ -88,7 +88,7 @@ impl FdtHeader {
             return Err(E::StructSize);
         }
         unsafe {
-            use crate::Blk;
+            use crate::StructureBlock as Blk;
             match core::slice::from_raw_parts(
                 (self as *const _ as *const u8)
                     .offset(off_struct as _)

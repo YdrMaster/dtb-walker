@@ -58,7 +58,7 @@ impl fmt::Display for DtPath<'_> {
         if let Some(parent) = unsafe { self.parent.as_ref() } {
             parent.fmt(f)?;
             '/'.fmt(f)?;
-            unsafe { core::str::from_utf8_unchecked(self.name) }.fmt(f)
+            unsafe { str::from_utf8_unchecked(self.name) }.fmt(f)
         } else {
             Ok(())
         }

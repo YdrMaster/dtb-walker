@@ -29,6 +29,7 @@ impl StructureBlock {
     /// §5.4.1 FDT_END
     pub const END: Self = Self(U32BigEndian::from_u32(9));
 
+    /// Converts to `u32`.
     pub const fn into_u32(self) -> u32 {
         self.0.into_u32()
     }

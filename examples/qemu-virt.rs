@@ -20,8 +20,11 @@ fn main() {
             );
             WalkOperation::StepInto
         }
-        DtbObj::Reg(_) => {
+        DtbObj::Reg(reg) => {
             println!("{}prop reg", " ".repeat(path.level() * 2));
+            for reg in reg {
+                println!("{}{reg:#x?}", " ".repeat(path.level() * 2 + 2));
+            }
             WalkOperation::StepInto
         }
         DtbObj::SubNode { name } => {

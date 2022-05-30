@@ -5,16 +5,19 @@ use core::{fmt, ptr, slice};
 
 mod dt_path;
 mod header;
+mod reg;
 mod structure_block;
 
 pub use dt_path::DtPath;
+pub use reg::Reg;
 
 use header::{FdtHeader, HeaderError};
-use structure_block::StructureBlock as Blk;
+use reg::RegCfg;
+use structure_block::StructureBlock;
 
 /// 设备树递归结构。
 pub struct DtbWalker<'a> {
-    tail: &'a [Blk],
+    tail: &'a [StructureBlock],
     header: &'a FdtHeader,
     strings: &'a [u8],
 }
@@ -31,9 +34,9 @@ impl DtbWalker<'static> {
         Ok(Self {
             tail: slice::from_raw_parts(
                 ptr.offset(header.off_dt_struct.into_u32() as _)
-                    .cast::<Blk>()
+                    .cast::<StructureBlock>()
                     .offset(2),
-                (header.size_dt_struct.into_u32() as usize) / Blk::LEN - 3,
+                (header.size_dt_struct.into_u32() as usize) / StructureBlock::LEN - 3,
             ),
             header,
             strings: slice::from_raw_parts(
@@ -53,12 +56,6 @@ pub enum DtbObj<'a> {
     SubNode { name: &'a [u8] },
 }
 
-pub struct Reg<'a> {
-    buf: &'a [Blk],
-    address_cells: usize,
-    size_cells: usize,
-}
-
 pub enum WalkOperation {
     /// 进入子节点
     StepInto,
@@ -73,13 +70,13 @@ pub enum WalkOperation {
 impl<'a> DtbWalker<'a> {
     /// 遍历。
     pub fn walk(mut self, f: &mut impl FnMut(&DtPath<'_>, DtbObj) -> WalkOperation) {
-        self.walk_inner(f, DtPath::root(), false);
+        self.walk_inner(f, DtPath::root(), RegCfg::DEFAULT, false);
     }
 }
 
 impl DtbWalker<'_> {
     /// 切分属性名。
-    fn prop_name(&self, nameoff: Blk) -> &[u8] {
+    fn prop_name(&self, nameoff: StructureBlock) -> &[u8] {
         let nameoff = nameoff.into_u32() as usize;
         let name = &self.strings[nameoff..];
         &name[..slice::memchr::memchr(b'\0', name).unwrap()]
@@ -90,12 +87,13 @@ impl DtbWalker<'_> {
         &mut self,
         f: &mut impl FnMut(&DtPath<'_>, DtbObj) -> WalkOperation,
         path: *const DtPath<'_>,
+        reg_cfg: RegCfg,
         mut escape: bool,
     ) -> bool {
+        use StructureBlock as Blk;
         use WalkOperation::*;
 
-        let mut address_cells = 2u32;
-        let mut size_cells = 1u32;
+        let mut sub_reg_cfg = RegCfg::DEFAULT;
         loop {
             match self.tail.split_first() {
                 Some((&Blk::NODE_BEGIN, tail)) => {
@@ -105,7 +103,7 @@ impl DtbWalker<'_> {
                     self.tail = tail;
                     if escape {
                         // 如果当前子树已选跳过，不可能再选择终止
-                        assert!(self.walk_inner(f, ptr::null(), true));
+                        assert!(self.walk_inner(f, ptr::null(), sub_reg_cfg, true));
                     } else {
                         // 正确舍弃尾 '\0'
                         let name = unsafe {
@@ -124,7 +122,7 @@ impl DtbWalker<'_> {
                             Terminate => return false,
                         };
                         let path = DtPath { parent: path, name };
-                        if !self.walk_inner(f, &path as _, escape) {
+                        if !self.walk_inner(f, &path as _, sub_reg_cfg, escape) {
                             return false;
                         }
                     }
@@ -142,26 +140,19 @@ impl DtbWalker<'_> {
                         let op = match self.prop_name(*nameoff) {
                             b"#address-cells" => match *value {
                                 [blk] => {
-                                    address_cells = blk.into_u32();
+                                    sub_reg_cfg.address_cells = blk.into_u32();
                                     StepOver
                                 }
                                 _ => panic!(),
                             },
                             b"#size-cells" => match *value {
                                 [blk] => {
-                                    size_cells = blk.into_u32();
+                                    sub_reg_cfg.size_cells = blk.into_u32();
                                     StepOver
                                 }
                                 _ => panic!(),
                             },
-                            b"reg" => f(
-                                unsafe { &*path },
-                                DtbObj::Reg(Reg {
-                                    buf: value,
-                                    address_cells: address_cells as _,
-                                    size_cells: size_cells as _,
-                                }),
-                            ),
+                            b"reg" => f(unsafe { &*path }, DtbObj::Reg(Reg::new(value, reg_cfg))),
                             name => f(
                                 unsafe { &*path },
                                 DtbObj::Property {
@@ -190,7 +181,7 @@ impl DtbWalker<'_> {
 
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub(crate) struct U32BigEndian(u32);
+struct U32BigEndian(u32);
 
 impl U32BigEndian {
     #[inline]
