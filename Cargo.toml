@@ -1,0 +1,8 @@
+[package]
+name = "dtb-walker"
+version = "0.1.0"
+edition = "2021"
+authors = ["YdrMaster <ydrml@hotmail.com>"]
+readme = "README.md"
+
+[dependencies]
