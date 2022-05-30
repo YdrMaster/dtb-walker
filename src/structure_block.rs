@@ -4,7 +4,7 @@ use crate::U32BigEndian;
 
 /// 结构块。
 #[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) struct StructureBlock(U32BigEndian);
 
 impl StructureBlock {

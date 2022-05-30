@@ -1,11 +1,12 @@
 ﻿use core::{fmt, ptr, str};
 
-pub struct DtPath<'a> {
-    pub(crate) parent: *const DtPath<'a>,
+/// 设备树节点路径。
+pub struct Path<'a> {
+    pub(crate) parent: *const Path<'a>,
     pub(crate) name: &'a [u8],
 }
 
-impl DtPath<'_> {
+impl Path<'_> {
     const ROOT: Self = Self {
         parent: ptr::null(),
         name: &[],
@@ -53,7 +54,7 @@ impl DtPath<'_> {
     }
 }
 
-impl fmt::Display for DtPath<'_> {
+impl fmt::Display for Path<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(parent) = unsafe { self.parent.as_ref() } {
             parent.fmt(f)?;

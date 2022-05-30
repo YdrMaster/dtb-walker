@@ -1,7 +1,7 @@
-﻿use core::ops::Range;
+﻿use crate::StructureBlock;
+use core::ops::Range;
 
-use crate::StructureBlock;
-
+/// `reg` 属性。
 #[derive(Clone)]
 pub struct Reg<'a> {
     buf: &'a [StructureBlock],
@@ -9,6 +9,8 @@ pub struct Reg<'a> {
 }
 
 impl<'a> Reg<'a> {
+    /// 检查属性值切片长度符合父节点设定的 `reg` 格式。
+    #[inline]
     pub(crate) fn new(buf: &'a [StructureBlock], cfg: RegCfg) -> Self {
         assert_eq!(0, buf.len() % (cfg.address_cells + cfg.size_cells) as usize);
         Self { buf, cfg }

@@ -41,6 +41,10 @@ const LAST_COMP_VERSION: u32 = 16;
 const LEN_HEADER: u32 = core::mem::size_of::<FdtHeader>() as _;
 
 impl FdtHeader {
+    // pub fn body_len(&self) ->usize{
+    //     self.totalsize-
+    // }
+
     pub fn verify(&self) -> Result<(), HeaderError> {
         use HeaderError as E;
         // 检查整体对齐
