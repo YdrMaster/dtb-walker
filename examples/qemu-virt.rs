@@ -25,7 +25,7 @@ fn main() {
             WalkOperation::StepInto
         }
         DtbObj::SubNode { name } => {
-            println!("{}subnode {}", " ".repeat(path.level() * 2), unsafe {
+            println!("{}{path}/{}", " ".repeat(path.level() * 2), unsafe {
                 core::str::from_utf8_unchecked(name)
             });
             WalkOperation::StepInto

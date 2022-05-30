@@ -1,7 +1,7 @@
 #![no_std]
 #![feature(slice_internals)]
 
-use core::{fmt, ptr::null};
+use core::{fmt, ptr, slice};
 
 mod dt_path;
 mod header;
@@ -29,14 +29,14 @@ impl DtbWalker<'static> {
         let header: &FdtHeader = &*ptr.cast();
         header.verify()?;
         Ok(Self {
-            tail: core::slice::from_raw_parts(
+            tail: slice::from_raw_parts(
                 ptr.offset(header.off_dt_struct.into_u32() as _)
                     .cast::<Blk>()
                     .offset(2),
                 (header.size_dt_struct.into_u32() as usize) / Blk::LEN - 3,
             ),
             header,
-            strings: core::slice::from_raw_parts(
+            strings: slice::from_raw_parts(
                 ptr.offset(header.off_dt_strings.into_u32() as _),
                 header.size_dt_strings.into_u32() as _,
             ),
@@ -73,7 +73,7 @@ pub enum WalkOperation {
 impl<'a> DtbWalker<'a> {
     /// 遍历。
     pub fn walk(mut self, f: &mut impl FnMut(&DtPath<'_>, DtbObj) -> WalkOperation) {
-        self.walk_inner(f, &DtPath::ROOT as _, false);
+        self.walk_inner(f, DtPath::root(), false);
     }
 }
 
@@ -82,7 +82,7 @@ impl DtbWalker<'_> {
     fn prop_name(&self, nameoff: Blk) -> &[u8] {
         let nameoff = nameoff.into_u32() as usize;
         let name = &self.strings[nameoff..];
-        &name[..core::slice::memchr::memchr(b'\0', name).unwrap()]
+        &name[..slice::memchr::memchr(b'\0', name).unwrap()]
     }
 
     /// 深度优先遍历。如果返回 `false`，取消所有后续的遍历。
@@ -105,17 +105,16 @@ impl DtbWalker<'_> {
                     self.tail = tail;
                     if escape {
                         // 如果当前子树已选跳过，不可能再选择终止
-                        assert!(self.walk_inner(f, null(), true));
+                        assert!(self.walk_inner(f, ptr::null(), true));
                     } else {
                         // 正确舍弃尾 '\0'
                         let name = unsafe {
-                            core::slice::from_raw_parts(
+                            slice::from_raw_parts(
                                 name.as_ptr().cast::<u8>(),
                                 name.len() * Blk::LEN - name.last().unwrap().str_tail_zero(),
                             )
                         };
-                        let path = DtPath { parent: path, name };
-                        let escape = match f(&path, DtbObj::SubNode { name }) {
+                        let escape = match f(unsafe { &*path }, DtbObj::SubNode { name }) {
                             StepInto => false,
                             StepOver => true,
                             StepOut => {
@@ -124,6 +123,7 @@ impl DtbWalker<'_> {
                             }
                             Terminate => return false,
                         };
+                        let path = DtPath { parent: path, name };
                         if !self.walk_inner(f, &path as _, escape) {
                             return false;
                         }
@@ -167,7 +167,7 @@ impl DtbWalker<'_> {
                                 DtbObj::Property {
                                     name,
                                     value: unsafe {
-                                        core::slice::from_raw_parts(value.as_ptr().cast(), len)
+                                        slice::from_raw_parts(value.as_ptr().cast(), len)
                                     },
                                 },
                             ),
