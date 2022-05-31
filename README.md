@@ -12,9 +12,9 @@ DTB 深度优先遍历的薄封装。
 - [x] 提前终止遍历；
 - [x] 低开销跳过节点；
 - [ ] 内置标准属性解析；
-  - [ ] `compatible`
-  - [ ] `model`
-  - [ ] `phandle`
+  - [x] `compatible`
+  - [x] `model`
+  - [x] `phandle`
   - [ ] `status`
   - [x] `#address-cells`
   - [x] `#size-cells`

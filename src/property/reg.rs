@@ -1,5 +1,5 @@
 ﻿use crate::StructureBlock;
-use core::ops::Range;
+use core::{fmt, ops::Range};
 
 /// `reg` 属性。
 #[derive(Clone)]
@@ -39,6 +39,21 @@ impl Iterator for Reg<'_> {
             .iter()
             .fold(0usize, |acc, it| (acc << 32) + it.into_u32() as usize);
         Some(base..base + size)
+    }
+}
+
+impl fmt::Debug for Reg<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut iter = self.clone();
+        write!(f, "[")?;
+        if let Some(first) = iter.next() {
+            first.fmt(f)?;
+            for s in iter {
+                write!(f, ", ")?;
+                s.fmt(f)?;
+            }
+        }
+        write!(f, "]")
     }
 }
 

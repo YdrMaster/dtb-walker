@@ -1,4 +1,6 @@
-﻿use crate::{DtbObj, Path, Reg, RegCfg, StructureBlock as Blk, WalkOperation};
+﻿use crate::{
+    DtbObj, PHandle, Path, Reg, RegCfg, Str, StrList, StructureBlock as Blk, WalkOperation,
+};
 use core::slice;
 
 /// 设备树递归结构。
@@ -94,7 +96,12 @@ impl Walker<'_> {
                                 }
                                 _ => panic!(),
                             },
+                            b"compatible" => f(path, DtbObj::Compatible(StrList::new(value, len))),
+                            b"model" => f(path, DtbObj::Model(Str::new(value, len))),
                             b"reg" => f(path, DtbObj::Reg(Reg::new(value, reg_cfg))),
+                            b"phandle" | b"linux,phandle" => {
+                                f(path, DtbObj::PHandle(PHandle::new(value)))
+                            }
                             name => f(
                                 path,
                                 DtbObj::Property {

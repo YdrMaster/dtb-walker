@@ -6,18 +6,19 @@ use core::{fmt, mem, slice};
 mod header;
 mod indent;
 mod path;
-mod reg;
+mod property;
 mod structure_block;
 mod walker;
 
 pub use path::Path;
-pub use reg::Reg;
+
+pub use property::{PHandle, Reg, Str, StrList};
 pub mod utils {
     pub use crate::indent::indent;
 }
 
 use header::{FdtHeader, HeaderError};
-use reg::RegCfg;
+use property::RegCfg;
 use structure_block::StructureBlock;
 use walker::Walker;
 
@@ -117,8 +118,14 @@ pub enum DtbObj<'a> {
     SubNode { name: &'a [u8] },
     /// 一般属性
     Property { name: &'a [u8], value: &'a [u8] },
+    /// 兼容性属性
+    Compatible(StrList<'a>),
+    /// 型号属性
+    Model(Str<'a>),
     /// 寄存器属性
     Reg(Reg<'a>),
+    /// 引用号属性
+    PHandle(PHandle),
 }
 
 /// 遍历操作。
