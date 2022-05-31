@@ -4,6 +4,7 @@
 use core::{fmt, mem, slice};
 
 mod header;
+mod indent;
 mod path;
 mod reg;
 mod structure_block;
@@ -11,6 +12,9 @@ mod walker;
 
 pub use path::Path;
 pub use reg::Reg;
+pub mod utils {
+    pub use crate::indent::indent;
+}
 
 use header::{FdtHeader, HeaderError};
 use reg::RegCfg;
