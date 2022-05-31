@@ -27,6 +27,8 @@ pub enum Property<'a> {
     Reg(Reg<'a>),
     /// §2.3.7 寄存器
     VirtualReg(u32),
+    /// §2.3.10 DMA 连贯性
+    DmaCoherent,
     /// 一般属性
     General { name: Str<'a>, value: &'a [u8] },
 }
@@ -48,6 +50,7 @@ impl<'a> Property<'a> {
                 .map_or_else(general, Self::PHandle),
             b"status" => Str::new(value, len).map_or_else(general, Self::Status),
             b"virtual-reg" => u32_from(value).map_or_else(general, Self::VirtualReg),
+            b"dma-coherent" if value.is_empty() => Self::DmaCoherent,
             _ => general(Error),
         }
     }
@@ -66,6 +69,7 @@ impl fmt::Debug for Property<'_> {
                 vreg.fmt(f)?;
                 write!(f, ">;")
             }
+            Property::DmaCoherent => write!(f, "dma-coherent;"),
             Property::General { name, value } => {
                 write!(f, "{}", unsafe { name.as_str_unchecked() })?;
                 match name {

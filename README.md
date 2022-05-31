@@ -22,6 +22,6 @@ DTB 深度优先遍历的薄封装。
   - [x] `virtual-reg`
   - [ ] `ranges`
   - [ ] `dma-ranges`
-  - [ ] `dma-coherent`
+  - [x] `dma-coherent`
   - [ ] `name (deprecated)`
   - [ ] `device_type (deprecated)`
