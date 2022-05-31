@@ -1,31 +1,31 @@
-﻿use core::{fmt, ptr, str};
+﻿use core::{fmt, str};
 
 /// 设备树节点路径。
 pub struct Path<'a> {
-    pub(crate) parent: *const Path<'a>,
+    pub(crate) parent: Option<&'a Path<'a>>,
     pub(crate) name: &'a [u8],
 }
 
 impl Path<'_> {
-    const ROOT: Self = Self {
-        parent: ptr::null(),
+    pub(crate) const ROOT: Self = Self {
+        parent: None,
         name: &[],
     };
 
+    /// 返回路径层数。定义根节点的子节点层数为 0。
     #[inline]
-    pub(crate) fn root() -> *const Self {
-        &Self::ROOT as _
+    pub fn level(&self) -> usize {
+        if let Some(parent) = self.parent {
+            parent.level() + 1
+        } else {
+            0
+        }
     }
 
-    /// 计算当前节点子树级别
-    pub fn level(&self) -> usize {
-        let mut ans = 0;
-        let mut ptr = self.parent;
-        while let Some(parent) = unsafe { ptr.as_ref() } {
-            ans += 1;
-            ptr = parent.parent;
-        }
-        ans
+    /// 返回路径最后一级的节点名。
+    #[inline]
+    pub fn last(&self) -> &[u8] {
+        self.name
     }
 
     /// 将路径字符串格式化到 `buf` 中。
@@ -33,7 +33,7 @@ impl Path<'_> {
     /// 如果返回 `Ok(n)`，表示字符串长度为 `n`（`n` 不大于 `buf.len()`）。
     /// 如果返回 `Err(n)`，表示缓冲区长度无法存放整个字符串，实现保证 `n` 等于 `buf.len()`。
     pub fn join(&self, buf: &mut [u8]) -> Result<usize, usize> {
-        let len = match unsafe { self.parent.as_ref() } {
+        let len = match self.parent {
             Some(parent) => parent.join(buf)?,
             None => return Ok(0),
         };
@@ -56,7 +56,7 @@ impl Path<'_> {
 
 impl fmt::Display for Path<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(parent) = unsafe { self.parent.as_ref() } {
+        if let Some(parent) = self.parent {
             parent.fmt(f)?;
             '/'.fmt(f)?;
             unsafe { str::from_utf8_unchecked(self.name) }.fmt(f)

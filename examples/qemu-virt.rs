@@ -11,7 +11,7 @@ fn main() {
     }
 
     let dtb = unsafe { Dtb::from_raw_parts(aligned.as_ptr() as _) }.unwrap();
-    dtb.walk(&mut |path, obj| match obj {
+    dtb.walk(|path, obj| match obj {
         DtbObj::SubNode { name } => {
             println!("{}{path}/{}", " ".repeat(path.level() * 2), unsafe {
                 core::str::from_utf8_unchecked(name)

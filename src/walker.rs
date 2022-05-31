@@ -1,5 +1,5 @@
 ﻿use crate::{DtbObj, Path, Reg, RegCfg, StructureBlock as Blk, WalkOperation};
-use core::{ptr, slice};
+use core::slice;
 
 /// 设备树递归结构。
 pub(crate) struct Walker<'a> {
@@ -19,7 +19,7 @@ impl Walker<'_> {
     pub fn walk_inner(
         &mut self,
         f: &mut impl FnMut(&Path<'_>, DtbObj) -> WalkOperation,
-        path: *const Path<'_>,
+        path: &Path<'_>,
         reg_cfg: RegCfg,
         mut escape: bool,
     ) -> bool {
@@ -36,7 +36,7 @@ impl Walker<'_> {
                     self.tail = tail;
                     if escape {
                         // 如果当前子树已选跳过，不可能再选择终止
-                        assert!(self.walk_inner(f, ptr::null(), sub_reg_cfg, true));
+                        assert!(self.walk_inner(f, path, sub_reg_cfg, true));
                     } else {
                         // 正确舍弃尾 '\0'
                         let name = unsafe {
@@ -45,7 +45,7 @@ impl Walker<'_> {
                                 name.len() * Blk::LEN - name.last().unwrap().str_tail_zero(),
                             )
                         };
-                        let escape = match f(unsafe { &*path }, DtbObj::SubNode { name }) {
+                        let escape = match f(path, DtbObj::SubNode { name }) {
                             StepInto => false,
                             StepOver => true,
                             StepOut => {
@@ -54,8 +54,15 @@ impl Walker<'_> {
                             }
                             Terminate => return false,
                         };
-                        let path = Path { parent: path, name };
-                        if !self.walk_inner(f, &path as _, sub_reg_cfg, escape) {
+                        if !self.walk_inner(
+                            f,
+                            &Path {
+                                parent: Some(path),
+                                name,
+                            },
+                            sub_reg_cfg,
+                            escape,
+                        ) {
                             return false;
                         }
                     }
@@ -87,9 +94,9 @@ impl Walker<'_> {
                                 }
                                 _ => panic!(),
                             },
-                            b"reg" => f(unsafe { &*path }, DtbObj::Reg(Reg::new(value, reg_cfg))),
+                            b"reg" => f(path, DtbObj::Reg(Reg::new(value, reg_cfg))),
                             name => f(
-                                unsafe { &*path },
+                                path,
                                 DtbObj::Property {
                                     name,
                                     value: unsafe {

@@ -80,7 +80,7 @@ impl Dtb<'_> {
     }
 
     /// 遍历。
-    pub fn walk(&self, f: &mut impl FnMut(&Path<'_>, DtbObj) -> WalkOperation) {
+    pub fn walk(&self, mut f: impl FnMut(&Path<'_>, DtbObj) -> WalkOperation) {
         let header = self.header();
         let off_struct = header.off_dt_struct.into_u32() as usize;
         let len_struct = header.size_dt_struct.into_u32() as usize;
@@ -98,7 +98,7 @@ impl Dtb<'_> {
             },
             strings: &self.0[off_strings..][..len_strings],
         }
-        .walk_inner(f, Path::root(), RegCfg::DEFAULT, false);
+        .walk_inner(&mut f, &Path::ROOT, RegCfg::DEFAULT, false);
     }
 
     #[inline]
