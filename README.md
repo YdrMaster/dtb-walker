@@ -15,10 +15,13 @@ DTB 深度优先遍历的薄封装。
   - [x] `compatible`
   - [x] `model`
   - [x] `phandle`
-  - [ ] `status`
+  - [x] `status`
   - [x] `#address-cells`
   - [x] `#size-cells`
   - [x] `reg`
-  - [ ] `virtual-reg`
+  - [x] `virtual-reg`
   - [ ] `ranges`
-  - [ ] ...
+  - [ ] `dma-ranges`
+  - [ ] `dma-coherent`
+  - [ ] `name (deprecated)`
+  - [ ] `device_type (deprecated)`

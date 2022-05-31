@@ -21,25 +21,7 @@ fn main() {
         }
         DtbObj::Property(prop) => {
             let indent = indent(path.level(), INDENT_WIDTH);
-            match prop {
-                Property::Compatible(compatible) => println!("{indent}compatible = {compatible};"),
-                Property::Model(model) => println!("{indent}model = {model};"),
-                Property::Reg(reg) => println!("{indent}reg = {reg:#x?};"),
-                Property::PHandle(phandle) => println!("{indent}phandle = {phandle:?};"),
-                Property::General { name, value } => {
-                    print!("{indent}{}", unsafe {
-                        core::str::from_utf8_unchecked(name)
-                    });
-                    match name {
-                        _ if !value.is_empty() => {
-                            println!(" = {value:02x?};");
-                        }
-                        _ => {
-                            println!(";");
-                        }
-                    }
-                }
-            }
+            println!("{indent}{prop:?}");
             WalkOperation::StepOver
         }
     });

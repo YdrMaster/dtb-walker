@@ -1,7 +1,7 @@
 ﻿use crate::{is_aligned, U32BigEndian};
 
 pub(crate) struct FdtHeader {
-    pub magic: U32BigEndian,
+    magic: U32BigEndian,
     pub totalsize: U32BigEndian,
     pub off_dt_struct: U32BigEndian,
     pub off_dt_strings: U32BigEndian,

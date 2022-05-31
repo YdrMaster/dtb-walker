@@ -3,7 +3,7 @@ use crate::StructureBlock;
 use core::{fmt, slice, str};
 
 #[derive(Clone)]
-pub struct Str<'a>(pub &'a [u8]);
+pub struct Str<'a>(pub(super) &'a [u8]);
 
 impl<'a> Str<'a> {
     #[inline]
@@ -18,6 +18,11 @@ impl<'a> Str<'a> {
 }
 
 impl Str<'_> {
+    #[inline]
+    pub fn as_bytes(&self) -> &[u8] {
+        self.0
+    }
+
     #[inline]
     pub fn as_str(&self) -> Result<&str, str::Utf8Error> {
         str::from_utf8(self.0)
