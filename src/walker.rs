@@ -1,6 +1,4 @@
-﻿use crate::{
-    DtbObj, PHandle, Path, Reg, RegCfg, Str, StrList, StructureBlock as Blk, WalkOperation,
-};
+﻿use crate::{DtbObj, Path, Property, Reg, RegCfg, StructureBlock as Blk, WalkOperation};
 use core::slice;
 
 /// 设备树递归结构。
@@ -82,35 +80,22 @@ impl Walker<'_> {
                     // 如果当前子树需要解析
                     if !escape {
                         let op = match self.prop_name(*nameoff) {
-                            b"#address-cells" => match *value {
-                                [blk] => {
-                                    sub_reg_cfg.address_cells = blk.into_u32();
-                                    StepOver
-                                }
-                                _ => panic!(),
-                            },
-                            b"#size-cells" => match *value {
-                                [blk] => {
-                                    sub_reg_cfg.size_cells = blk.into_u32();
-                                    StepOver
-                                }
-                                _ => panic!(),
-                            },
-                            b"compatible" => f(path, DtbObj::Compatible(StrList::new(value, len))),
-                            b"model" => f(path, DtbObj::Model(Str::new(value, len))),
-                            b"reg" => f(path, DtbObj::Reg(Reg::new(value, reg_cfg))),
-                            b"phandle" | b"linux,phandle" => {
-                                f(path, DtbObj::PHandle(PHandle::new(value)))
+                            b"#address-cells" if value.len() == 1 => {
+                                sub_reg_cfg.address_cells = value[0].into_u32();
+                                StepOver
                             }
-                            name => f(
+                            b"#size-cells" if value.len() == 1 => {
+                                sub_reg_cfg.size_cells = value[0].into_u32();
+                                StepOver
+                            }
+                            b"reg" if value.len() % reg_cfg.item_size() == 0 => f(
                                 path,
-                                DtbObj::Property {
-                                    name,
-                                    value: unsafe {
-                                        slice::from_raw_parts(value.as_ptr().cast(), len)
-                                    },
-                                },
+                                DtbObj::Property(Property::Reg(Reg {
+                                    buf: value,
+                                    cfg: reg_cfg,
+                                })),
                             ),
+                            name => f(path, DtbObj::Property(Property::new(name, value, len))),
                         };
                         match op {
                             StepInto | StepOver => {}

@@ -4,17 +4,8 @@ use core::{fmt, ops::Range};
 /// `reg` 属性。
 #[derive(Clone)]
 pub struct Reg<'a> {
-    buf: &'a [StructureBlock],
-    cfg: RegCfg,
-}
-
-impl<'a> Reg<'a> {
-    /// 检查属性值切片长度符合父节点设定的 `reg` 格式。
-    #[inline]
-    pub(crate) fn new(buf: &'a [StructureBlock], cfg: RegCfg) -> Self {
-        assert_eq!(0, buf.len() % (cfg.address_cells + cfg.size_cells) as usize);
-        Self { buf, cfg }
-    }
+    pub(crate) buf: &'a [StructureBlock],
+    pub(crate) cfg: RegCfg,
 }
 
 impl Iterator for Reg<'_> {
@@ -68,4 +59,9 @@ impl RegCfg {
         address_cells: 2,
         size_cells: 1,
     };
+
+    #[inline]
+    pub(crate) fn item_size(&self) -> usize {
+        (self.address_cells + self.size_cells) as _
+    }
 }

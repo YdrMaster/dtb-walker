@@ -12,7 +12,7 @@ mod walker;
 
 pub use path::Path;
 
-pub use property::{PHandle, Reg, Str, StrList};
+pub use property::{PHandle, Property, Reg, Str, StrList};
 pub mod utils {
     pub use crate::indent::indent;
 }
@@ -117,15 +117,7 @@ pub enum DtbObj<'a> {
     /// 子节点
     SubNode { name: &'a [u8] },
     /// 一般属性
-    Property { name: &'a [u8], value: &'a [u8] },
-    /// 兼容性属性
-    Compatible(StrList<'a>),
-    /// 型号属性
-    Model(Str<'a>),
-    /// 寄存器属性
-    Reg(Reg<'a>),
-    /// 引用号属性
-    PHandle(PHandle),
+    Property(Property<'a>),
 }
 
 /// 遍历操作。

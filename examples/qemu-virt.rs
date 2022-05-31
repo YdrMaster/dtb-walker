@@ -1,7 +1,8 @@
-﻿use dtb_walker::{utils::indent, Dtb, DtbObj, WalkOperation};
+﻿use dtb_walker::{utils::indent, Dtb, DtbObj, Property, WalkOperation};
 
 const DEVICE_TREE: &[u8] = include_bytes!("qemu-virt.dtb");
 const INDENT_WIDTH: usize = 4;
+
 fn main() {
     let mut aligned = vec![0usize; DEVICE_TREE.len() / core::mem::size_of::<usize>()];
     unsafe {
@@ -18,40 +19,27 @@ fn main() {
             });
             WalkOperation::StepInto
         }
-        DtbObj::Property { name, value } => {
-            print!("{}{}", indent(path.level(), INDENT_WIDTH), unsafe {
-                core::str::from_utf8_unchecked(name)
-            });
-            match name {
-                _ if !value.is_empty() => {
-                    println!(" = {value:02x?};");
-                }
-                _ => {
-                    println!(";");
+        DtbObj::Property(prop) => {
+            let indent = indent(path.level(), INDENT_WIDTH);
+            match prop {
+                Property::Compatible(compatible) => println!("{indent}compatible = {compatible};"),
+                Property::Model(model) => println!("{indent}model = {model};"),
+                Property::Reg(reg) => println!("{indent}reg = {reg:#x?};"),
+                Property::PHandle(phandle) => println!("{indent}phandle = {phandle:?};"),
+                Property::General { name, value } => {
+                    print!("{indent}{}", unsafe {
+                        core::str::from_utf8_unchecked(name)
+                    });
+                    match name {
+                        _ if !value.is_empty() => {
+                            println!(" = {value:02x?};");
+                        }
+                        _ => {
+                            println!(";");
+                        }
+                    }
                 }
             }
-            WalkOperation::StepOver
-        }
-        DtbObj::Compatible(compatible) => {
-            println!(
-                "{}compatible = {compatible};",
-                indent(path.level(), INDENT_WIDTH)
-            );
-            WalkOperation::StepOver
-        }
-        DtbObj::Model(model) => {
-            println!("{}model = {model};", indent(path.level(), INDENT_WIDTH));
-            WalkOperation::StepOver
-        }
-        DtbObj::Reg(reg) => {
-            println!("{}reg = {reg:#x?};", indent(path.level(), INDENT_WIDTH));
-            WalkOperation::StepOver
-        }
-        DtbObj::PHandle(phandle) => {
-            println!(
-                "{}phandle = {phandle:?};",
-                indent(path.level(), INDENT_WIDTH)
-            );
             WalkOperation::StepOver
         }
     });

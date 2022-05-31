@@ -1,4 +1,5 @@
-﻿use crate::StructureBlock;
+﻿use super::{Error, Result as Res};
+use crate::StructureBlock;
 use core::{fmt, slice, str};
 
 #[derive(Clone)]
@@ -6,10 +7,13 @@ pub struct Str<'a>(pub &'a [u8]);
 
 impl<'a> Str<'a> {
     #[inline]
-    pub(crate) fn new(value: &'a [StructureBlock], len: usize) -> Self {
+    pub(super) fn new(value: &'a [StructureBlock], len: usize) -> Res<Self> {
         let buf = unsafe { slice::from_raw_parts(value.as_ptr().cast(), len) };
-        assert_eq!(Some(b'\0'), buf.last().copied());
-        Self(&buf[..buf.len() - 1])
+        if let Some(b'\0') = buf.last().copied() {
+            Ok(Self(&buf[..buf.len() - 1]))
+        } else {
+            Err(Error)
+        }
     }
 }
 
@@ -43,10 +47,13 @@ pub struct StrList<'a>(&'a [u8]);
 
 impl<'a> StrList<'a> {
     #[inline]
-    pub(crate) fn new(value: &'a [StructureBlock], len: usize) -> Self {
+    pub(super) fn new(value: &'a [StructureBlock], len: usize) -> Res<Self> {
         let buf = unsafe { slice::from_raw_parts(value.as_ptr().cast(), len) };
-        assert_eq!(Some(b'\0'), buf.last().copied());
-        Self(buf)
+        if let Some(b'\0') = buf.last().copied() {
+            Ok(Self(buf))
+        } else {
+            Err(Error)
+        }
     }
 }
 
