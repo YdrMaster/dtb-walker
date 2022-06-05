@@ -11,7 +11,6 @@ mod structure_block;
 mod walker;
 
 pub use path::Path;
-
 pub use property::{PHandle, Property, Reg, Str, StrList};
 pub mod utils {
     pub use crate::indent::indent;

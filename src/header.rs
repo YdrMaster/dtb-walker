@@ -30,10 +30,11 @@ pub enum HeaderError {
     StringsSize,
 }
 
-const DTB_ALIGN_BITS: usize = core::mem::size_of::<usize>();
-const MEMREV_ALIGN_BITS: usize = 4;
-const STRUCT_ALIGN_BITS: usize = 4;
-const STRUCT_SIZE_ALIGN_BITS: usize = 4;
+const FOUR: usize = 4;
+const DTB_ALIGN_BITS: usize = FOUR;
+const MEMREV_ALIGN_BITS: usize = FOUR;
+const STRUCT_ALIGN_BITS: usize = FOUR;
+const STRUCT_SIZE_ALIGN_BITS: usize = FOUR;
 
 const MAGIC: U32BigEndian = U32BigEndian::from_u32(0xd00dfeed);
 const VERSION: u32 = 17;
@@ -41,13 +42,10 @@ const LAST_COMP_VERSION: u32 = 16;
 const LEN_HEADER: u32 = core::mem::size_of::<FdtHeader>() as _;
 
 impl FdtHeader {
-    // pub fn body_len(&self) ->usize{
-    //     self.totalsize-
-    // }
-
     pub fn verify(&self) -> Result<(), HeaderError> {
         use HeaderError as E;
         // 检查整体对齐
+        // 标准说设备树应该 8 对齐，至少是 usize 对齐，但实际上里面的内容确实都是 4 对齐的，很多实现也只提供 4 对齐
         if !is_aligned(self as *const _ as _, DTB_ALIGN_BITS) {
             return Err(E::Misaligned);
         }
