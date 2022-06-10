@@ -8,6 +8,7 @@ pub(crate) struct FdtHeader {
     pub off_mem_rsvmap: U32BigEndian,
     pub version: U32BigEndian,
     pub last_comp_version: U32BigEndian,
+    #[allow(unused)]
     pub boot_cpuid_phys: U32BigEndian,
     pub size_dt_strings: U32BigEndian,
     pub size_dt_struct: U32BigEndian,

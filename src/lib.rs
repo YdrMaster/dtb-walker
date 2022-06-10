@@ -1,5 +1,6 @@
 #![no_std]
 #![feature(slice_internals)]
+#![deny(warnings)] // cancel this during developing
 
 use core::{fmt, mem, slice};
 

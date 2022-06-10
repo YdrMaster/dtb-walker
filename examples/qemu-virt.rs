@@ -1,4 +1,4 @@
-﻿use dtb_walker::{utils::indent, Dtb, DtbObj, Property, WalkOperation};
+﻿use dtb_walker::{utils::indent, Dtb, DtbObj, WalkOperation};
 
 const DEVICE_TREE: &[u8] = include_bytes!("qemu-virt.dtb");
 const INDENT_WIDTH: usize = 4;

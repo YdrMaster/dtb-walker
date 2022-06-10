@@ -2,6 +2,12 @@
 
 DTB 深度优先遍历的薄封装。
 
+测试示例：
+
+```cmd
+cargo run --release --example qemu-virt
+```
+
 设备树定义根据 [devicetree-specification-v0.4-rc1](https://github.com/devicetree-org/devicetree-specification/releases/tag/v0.4-rc1)，DTB v17。
 
 特性：
