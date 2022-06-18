@@ -1,4 +1,4 @@
-﻿use dtb_walker::{utils::indent, Dtb, DtbObj, WalkOperation};
+﻿use dtb_walker::{utils::indent, Dtb, DtbObj, HeaderError, WalkOperation};
 
 const DEVICE_TREE: &[u8] = include_bytes!("qemu-virt.dtb");
 const INDENT_WIDTH: usize = 4;
@@ -11,7 +11,14 @@ fn main() {
             .copy_from_nonoverlapping(DEVICE_TREE.as_ptr() as _, aligned.len());
     }
 
-    let dtb = unsafe { Dtb::from_raw_parts(aligned.as_ptr() as _) }.unwrap();
+    let dtb = match unsafe { Dtb::from_raw_parts(aligned.as_ptr() as _) } {
+        Ok(ans) => ans,
+        Err(HeaderError::LastCompVersion) => {
+            // ignore!
+            unsafe { Dtb::from_raw_parts_unchecked(aligned.as_ptr() as _) }
+        }
+        Err(e) => panic!("Verify dtb header failed: {e:?}"),
+    };
     dtb.walk(|path, obj| match obj {
         DtbObj::SubNode { name } => {
             println!("{}{path}/{}", indent(path.level(), INDENT_WIDTH), unsafe {

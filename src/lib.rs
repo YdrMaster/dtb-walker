@@ -16,8 +16,9 @@ pub use property::{PHandle, Property, Reg, Str, StrList};
 pub mod utils {
     pub use crate::indent::indent;
 }
+pub use header::HeaderError;
 
-use header::{FdtHeader, HeaderError};
+use header::FdtHeader;
 use property::RegCfg;
 use structure_block::StructureBlock;
 use walker::Walker;
