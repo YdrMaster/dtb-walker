@@ -1,5 +1,10 @@
 ﻿# 深度优先遍历设备树二进制对象
 
+[![Build status](https://img.shields.io/github/workflow/status/YdrMaster/dtb-walker/CI/main)](https://github.com/YdrMaster/dtb-walker/actions)
+[![Latest version](https://img.shields.io/crates/v/dtb-walker.svg)](https://crates.io/crates/dtb-walker)
+[![Documentation](https://docs.rs/dtb-walker/badge.svg)](https://docs.rs/dtb-walker)
+![License](https://img.shields.io/crates/l/dtb-walker.svg)
+
 - [An English README](docs/README_EN.md)
 - [更新日志](CHANGELOG.md)
 
