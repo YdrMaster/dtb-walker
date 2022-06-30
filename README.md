@@ -15,9 +15,10 @@ cargo run --release --example qemu-virt
 
 特性：
 
-- [x] 可选是否检查首部正确性；
+- [x] stable rust
 - [x] `no_std`；
 - [x] 不需要 `alloc`；
+- [x] 可选是否检查首部正确性；
 - [x] 提前终止遍历；
 - [x] 低开销跳过节点；
 - [ ] 内置标准属性解析；

@@ -1,5 +1,4 @@
 #![no_std]
-#![feature(slice_internals)]
 #![deny(warnings)] // cancel this line during developing
 
 mod header;

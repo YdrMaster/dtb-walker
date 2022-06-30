@@ -1,5 +1,15 @@
 ﻿# 更新日志 Change Log
 
+## v0.1.3
+
+- 功能
+  - 移除不稳定特性，支持 stable 编译
+
+---
+
+- feature
+  - removes unstable features and allows to compile with stable rust
+
 ## v0.1.2
 
 - 功能

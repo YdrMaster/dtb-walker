@@ -12,7 +12,7 @@ impl Walker<'_> {
     fn prop_name(&self, nameoff: Blk) -> &[u8] {
         let nameoff = nameoff.into_u32() as usize;
         let name = &self.strings[nameoff..];
-        &name[..slice::memchr::memchr(b'\0', name).unwrap()]
+        &name[..name.iter().position(|c| *c == b'\0').unwrap()]
     }
 
     /// 深度优先遍历。如果返回 `false`，取消所有后续的遍历。

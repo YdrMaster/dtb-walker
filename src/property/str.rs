@@ -71,7 +71,7 @@ impl<'a> Iterator for StrList<'a> {
         }
         let (head, tail) = self
             .0
-            .split_at(slice::memchr::memchr(b'\0', self.0).unwrap());
+            .split_at(self.0.iter().position(|c| *c == b'\0').unwrap());
         self.0 = &tail[1..];
         Some(Str(head))
     }

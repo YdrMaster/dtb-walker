@@ -15,9 +15,10 @@ Following the [devicetree-specification-v0.4-rc1](https://github.com/devicetree-
 
 Features:
 
-- [x] optional header verifying;
+- [x] stable rust
 - [x] `no_std`;
 - [x] without `alloc`;
+- [x] optional header verifying;
 - [x] terminate walking at any time;
 - [x] step over nodes with low overhead;
 - [ ] built-in standard property parsing;

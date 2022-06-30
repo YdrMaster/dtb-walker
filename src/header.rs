@@ -157,5 +157,9 @@ fn misaligned(addr: u32) -> u32 {
 
 #[inline]
 fn check(filter: impl Fn(&HeaderError) -> bool, err: HeaderError) -> Result<(), HeaderError> {
-    filter(&err).then_some(()).ok_or(err)
+    if filter(&err) {
+        Ok(())
+    } else {
+        Err(err)
+    }
 }
