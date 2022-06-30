@@ -11,14 +11,15 @@ fn main() {
             .copy_from_nonoverlapping(DEVICE_TREE.as_ptr() as _, aligned.len());
     }
 
-    let dtb = match unsafe { Dtb::from_raw_parts(aligned.as_ptr() as _) } {
-        Ok(ans) => ans,
-        Err(HeaderError::LastCompVersion) => {
-            // ignore!
-            unsafe { Dtb::from_raw_parts_unchecked(aligned.as_ptr() as _) }
-        }
-        Err(e) => panic!("Verify dtb header failed: {e:?}"),
-    };
+    let dtb = unsafe {
+        Dtb::from_raw_parts_filtered(aligned.as_ptr() as _, |e| {
+            matches!(
+                e,
+                HeaderError::Misaligned(4) | HeaderError::LastCompVersion(16)
+            )
+        })
+    }
+    .unwrap();
     dtb.walk(|path, obj| match obj {
         DtbObj::SubNode { name } => {
             println!("{}{path}/{}", indent(path.level(), INDENT_WIDTH), unsafe {

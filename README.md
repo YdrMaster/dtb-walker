@@ -1,5 +1,8 @@
 ﻿# 深度优先遍历设备树二进制对象
 
+- [An English README](docs/README_EN.md)
+- [更新日志](CHANGELOG.md)
+
 DTB 深度优先遍历的薄封装。
 
 测试示例：
@@ -14,7 +17,7 @@ cargo run --release --example qemu-virt
 
 - [x] 可选是否检查首部正确性；
 - [x] `no_std`；
-- [x] without `alloc`；
+- [x] 不需要 `alloc`；
 - [x] 提前终止遍历；
 - [x] 低开销跳过节点；
 - [ ] 内置标准属性解析；

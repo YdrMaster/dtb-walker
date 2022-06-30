@@ -1,8 +1,6 @@
 #![no_std]
 #![feature(slice_internals)]
-#![deny(warnings)] // cancel this during developing
-
-use core::{fmt, mem, slice};
+#![deny(warnings)] // cancel this line during developing
 
 mod header;
 mod indent;
@@ -18,6 +16,7 @@ pub mod utils {
 }
 pub use header::HeaderError;
 
+use core::{fmt, mem, slice};
 use header::FdtHeader;
 use property::RegCfg;
 use structure_block::StructureBlock;
@@ -34,7 +33,21 @@ impl Dtb<'static> {
     /// 如果指针指向一个有效的 DTB 首部，其中描述的整个二进制对象会被切片。
     #[inline]
     pub unsafe fn from_raw_parts(ptr: *const u8) -> Result<Self, HeaderError> {
-        (*ptr.cast::<FdtHeader>()).verify()?;
+        (*ptr.cast::<FdtHeader>()).verify(|_| true)?;
+        Ok(Self::from_raw_parts_unchecked(ptr))
+    }
+
+    /// 构造设备树二进制对象。
+    ///
+    /// # Safety
+    ///
+    /// 如果指针指向一个有效的 DTB 首部，其中描述的整个二进制对象会被切片。
+    #[inline]
+    pub unsafe fn from_raw_parts_filtered(
+        ptr: *const u8,
+        f: impl Fn(&HeaderError) -> bool,
+    ) -> Result<Self, HeaderError> {
+        (*ptr.cast::<FdtHeader>()).verify(f)?;
         Ok(Self::from_raw_parts_unchecked(ptr))
     }
 
@@ -64,7 +77,7 @@ impl<'a> Dtb<'a> {
             return Err(ConvertError::Truncated);
         }
         let header = unsafe { &*slice.as_ptr().cast::<FdtHeader>() };
-        match header.verify() {
+        match header.verify(|_| true) {
             Ok(()) => {
                 let len = header.totalsize.into_u32() as usize;
                 if len <= slice.len() {
