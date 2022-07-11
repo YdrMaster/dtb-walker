@@ -1,15 +1,14 @@
 ﻿//! §2.3
 
+mod phandle;
 mod reg;
 mod str;
-mod u32;
 
-use self::u32::u32_from;
 use crate::StructureBlock;
 use core::{fmt, slice};
 
+pub use self::phandle::PHandle;
 pub use self::str::{Str, StrList};
-pub use self::u32::PHandle;
 pub use reg::Reg;
 pub(crate) use reg::RegCfg;
 
@@ -34,6 +33,7 @@ pub enum Property<'a> {
 }
 
 struct Error;
+
 type Result<T> = core::result::Result<T, Error>;
 
 impl<'a> Property<'a> {
@@ -59,18 +59,18 @@ impl<'a> Property<'a> {
 impl fmt::Debug for Property<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Property::Compatible(compatible) => write!(f, "compatible = {compatible};"),
-            Property::Model(model) => write!(f, "model = {model};"),
-            Property::Reg(reg) => write!(f, "reg = {reg:#x?};"),
-            Property::PHandle(phandle) => write!(f, "phandle = {phandle:?};"),
-            Property::Status(status) => write!(f, "status = {status};"),
-            Property::VirtualReg(vreg) => {
+            Self::Compatible(compatible) => write!(f, "compatible = {compatible};"),
+            Self::Model(model) => write!(f, "model = {model};"),
+            Self::Reg(reg) => write!(f, "reg = {reg:#x?};"),
+            Self::PHandle(phandle) => write!(f, "phandle = {phandle:?};"),
+            Self::Status(status) => write!(f, "status = {status};"),
+            Self::VirtualReg(vreg) => {
                 write!(f, "virtual-reg = <")?;
                 vreg.fmt(f)?;
                 write!(f, ">;")
             }
-            Property::DmaCoherent => write!(f, "dma-coherent;"),
-            Property::General { name, value } => {
+            Self::DmaCoherent => write!(f, "dma-coherent;"),
+            Self::General { name, value } => {
                 write!(f, "{}", unsafe { name.as_str_unchecked() })?;
                 match name {
                     _ if !value.is_empty() => {
@@ -82,5 +82,13 @@ impl fmt::Debug for Property<'_> {
                 }
             }
         }
+    }
+}
+
+#[inline]
+fn u32_from(value: &[StructureBlock]) -> Result<u32> {
+    match *value {
+        [blk] => Ok(blk.into_u32()),
+        _ => Err(Error),
     }
 }
