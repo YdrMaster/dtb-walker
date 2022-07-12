@@ -1,8 +1,12 @@
-﻿use core::fmt;
+﻿//! §2.3.3
 
+use core::fmt;
+
+/// §2.3.3 phandle 属性
 pub struct PHandle(pub(super) u32);
 
 impl PHandle {
+    /// 返回 phandle 值。
     #[inline]
     pub fn value(&self) -> u32 {
         self.0

@@ -5,8 +5,9 @@ pub struct Indent {
     width: usize,
 }
 
+/// 构造一个 `level` 级，每级宽 `width` 的缩进。
 #[inline]
-pub fn indent(level: usize, width: usize) -> Indent {
+pub const fn indent(level: usize, width: usize) -> Indent {
     Indent { level, width }
 }
 

@@ -16,21 +16,60 @@ pub(crate) struct FdtHeader {
     pub size_dt_struct: U32BigEndian,
 }
 
-#[derive(Debug)]
+/// 首部检查可能发现的错误类型。
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum HeaderError {
+    /// 设备树整体不对齐。
     Misaligned(u32),
+    /// `magic` 字段不是 0xd00dfeed。
     Magic(u32),
+    /// 版本不兼容。
     Version(u32),
+    /// 最后兼容版本不兼容。
     LastCompVersion(u32),
+    /// 设备树总大小不合理。
     TotalSize(u32),
+    /// 结构块偏移不对齐。
     StructMisaligned(u32),
-    StructOffset { value: u32, expected: Range<u32> },
-    StructSize { value: u32, max: u32 },
+    /// 结构块偏移不合理。
+    StructOffset {
+        /// 解析出的结构块偏移。
+        value: u32,
+        /// 可接受的结构块偏移。
+        expected: Range<u32>,
+    },
+    /// 结构块大小不合理。
+    StructSize {
+        /// 解析出的结构块大小。
+        value: u32,
+        /// 可接受的最大结构块。
+        max: u32,
+    },
+    /// 结构块内容不合理，即没有根节点或不以 END 标记结尾。
     StructContent,
+    /// 地址保护区偏移不对齐。
     MemRsvMisaligned(u32),
-    MemRsvOffset { value: u32, expected: Range<u32> },
-    StringsOffset { value: u32, expected: Range<u32> },
-    StringsSize { value: u32, max: u32 },
+    /// 地址保护区偏移不合理。
+    MemRsvOffset {
+        /// 解析出的地址保护区偏移。
+        value: u32,
+        /// 可接受的地址保护区偏移。
+        expected: Range<u32>,
+    },
+    /// 字符串区偏移不合理。
+    StringsOffset {
+        /// 解析出的字符串区偏移。
+        value: u32,
+        /// 可接受的字符串区偏移。
+        expected: Range<u32>,
+    },
+    /// 字符串区大小不合理。
+    StringsSize {
+        /// 解析出的字符串区大小。
+        value: u32,
+        /// 可接受的字符串区大小。
+        max: u32,
+    },
 }
 
 const FOUR: usize = 4;

@@ -4,11 +4,11 @@ mod phandle;
 mod reg;
 mod str;
 
-use crate::StructureBlock;
+use crate::{Str, StructureBlock};
 use core::{fmt, slice};
 
 pub use self::phandle::PHandle;
-pub use self::str::{Str, StrList};
+pub use self::str::StrList;
 pub use reg::Reg;
 pub(crate) use reg::RegCfg;
 
@@ -29,7 +29,12 @@ pub enum Property<'a> {
     /// §2.3.10 DMA 连贯性
     DmaCoherent,
     /// 一般属性
-    General { name: Str<'a>, value: &'a [u8] },
+    General {
+        /// 属性名
+        name: Str<'a>,
+        /// 属性值
+        value: &'a [u8],
+    },
 }
 
 struct Error;

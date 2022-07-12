@@ -1,5 +1,19 @@
+//! A simple package for DTB depth-first walking.
+//!
+//! # Example
+//!
+//! ```cmd
+//! cargo run --release --example qemu-virt
+//! ```
+//!
+//! # Usage
+//!
+//! ```rust,no_run
+//! Dtb::from_raw_parts(dtb).unwrap()
+//! ```
+
 #![no_std]
-#![deny(warnings)] // cancel this line during developing
+#![deny(warnings, unstable_features, missing_docs)] // cancel this line during developing
 
 mod header;
 mod indent;
@@ -9,8 +23,10 @@ mod structure_block;
 mod walker;
 
 pub use path::Path;
-pub use property::{PHandle, Property, Reg, Str, StrList};
+pub use property::{PHandle, Property, Reg, StrList};
 pub mod utils {
+    //! 用于设备树解析、格式化的工具集。
+
     pub use crate::indent::indent;
 }
 pub use header::HeaderError;
@@ -64,9 +80,12 @@ impl Dtb<'static> {
     }
 }
 
+/// 从内存切片构造设备树二进制对象失败。
 pub enum ConvertError {
-    Truncated,
+    /// 首部检查未通过。
     Header(HeaderError),
+    /// 切片未能容纳整个设备树。
+    Truncated,
 }
 
 impl<'a> Dtb<'a> {
@@ -127,22 +146,59 @@ impl Dtb<'_> {
 
 /// 设备树二进制小对象。
 pub enum DtbObj<'a> {
-    /// 子节点
-    SubNode { name: &'a [u8] },
-    /// 一般属性
+    /// 子节点。
+    SubNode {
+        /// 节点名。
+        name: Str<'a>,
+    },
+    /// 一般属性。
     Property(Property<'a>),
 }
 
 /// 遍历操作。
 pub enum WalkOperation {
-    /// 进入子节点
+    /// 进入子节点。
     StepInto,
-    /// 跳过子节点
+    /// 跳过子节点。
     StepOver,
-    /// 跳过当前子树
+    /// 跳过当前子树。
     StepOut,
-    /// 结束遍历
+    /// 结束遍历。
     Terminate,
+}
+
+/// 地址空间上的一个字符串，但未检查是否符合 utf-8 编码。
+#[derive(Clone, Copy)]
+pub struct Str<'a>(&'a [u8]);
+
+impl Str<'_> {
+    /// Converts to `&[u8]`.
+    #[inline]
+    pub fn as_bytes(&self) -> &[u8] {
+        self.0
+    }
+
+    /// Converts to [`str`].
+    #[inline]
+    pub fn as_str(&self) -> Result<&str, core::str::Utf8Error> {
+        core::str::from_utf8(self.0)
+    }
+
+    /// Converts to [`str`] without checking utf-8 validity.
+    ///
+    /// # Safety
+    ///
+    /// see [`core::str::from_utf8_unchecked`].
+    #[inline]
+    pub unsafe fn as_str_unchecked(&self) -> &str {
+        core::str::from_utf8_unchecked(self.0)
+    }
+}
+
+impl fmt::Display for Str<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        unsafe { self.as_str_unchecked() }.fmt(f)
+    }
 }
 
 #[repr(transparent)]

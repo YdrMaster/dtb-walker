@@ -1,4 +1,4 @@
-﻿use crate::{DtbObj, Path, Property, Reg, RegCfg, StructureBlock as Blk, WalkOperation};
+﻿use crate::{DtbObj, Path, Property, Reg, RegCfg, Str, StructureBlock as Blk, WalkOperation};
 use core::slice;
 
 /// 设备树递归结构。
@@ -39,12 +39,12 @@ impl Walker<'_> {
                         assert!(self.walk_inner(f, path, sub_reg_cfg, true));
                     } else {
                         // 正确舍弃尾 '\0'
-                        let name = unsafe {
+                        let name = Str(unsafe {
                             slice::from_raw_parts(
                                 name.as_ptr().cast::<u8>(),
                                 name.len() * Blk::LEN - name.last().unwrap().str_tail_zero(),
                             )
-                        };
+                        });
                         let escape = match f(path, DtbObj::SubNode { name }) {
                             StepInto => false,
                             StepOver => true,

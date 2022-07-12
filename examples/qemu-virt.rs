@@ -22,9 +22,7 @@ fn main() {
     .unwrap();
     dtb.walk(|path, obj| match obj {
         DtbObj::SubNode { name } => {
-            println!("{}{path}/{}", indent(path.level(), INDENT_WIDTH), unsafe {
-                core::str::from_utf8_unchecked(name)
-            });
+            println!("{}{path}/{name}", indent(path.level(), INDENT_WIDTH));
             WalkOperation::StepInto
         }
         DtbObj::Property(prop) => {

@@ -1,9 +1,8 @@
-﻿use super::{Error, Result as Res};
-use crate::StructureBlock;
-use core::{fmt, slice, str};
+﻿//! see §2.2.4/Property-Values
 
-#[derive(Clone)]
-pub struct Str<'a>(pub(super) &'a [u8]);
+use super::{Error, Result as Res};
+use crate::{Str, StructureBlock};
+use core::{fmt, slice};
 
 impl<'a> Str<'a> {
     #[inline]
@@ -17,36 +16,7 @@ impl<'a> Str<'a> {
     }
 }
 
-impl Str<'_> {
-    #[inline]
-    pub fn as_bytes(&self) -> &[u8] {
-        self.0
-    }
-
-    #[inline]
-    pub fn as_str(&self) -> Result<&str, str::Utf8Error> {
-        str::from_utf8(self.0)
-    }
-
-    /// Converts to str without checking utf-8 validity.
-    ///
-    /// # Safety
-    ///
-    /// see [`core::str::from_utf8_unchecked`].
-    #[inline]
-    pub unsafe fn as_str_unchecked(&self) -> &str {
-        str::from_utf8_unchecked(self.0)
-    }
-}
-
-impl fmt::Display for Str<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        '"'.fmt(f)?;
-        unsafe { self.as_str_unchecked() }.fmt(f)?;
-        '"'.fmt(f)
-    }
-}
-
+/// `<stringlist>` 类型的属性值。
 #[derive(Clone)]
 pub struct StrList<'a>(&'a [u8]);
 
@@ -82,10 +52,14 @@ impl fmt::Display for StrList<'_> {
         let mut iter = self.clone();
         '['.fmt(f)?;
         if let Some(first) = iter.next() {
+            '"'.fmt(f)?;
             first.fmt(f)?;
+            '"'.fmt(f)?;
             for s in iter {
                 ", ".fmt(f)?;
+                '"'.fmt(f)?;
                 s.fmt(f)?;
+                '"'.fmt(f)?;
             }
         }
         ']'.fmt(f)
