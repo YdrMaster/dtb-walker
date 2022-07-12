@@ -19,9 +19,11 @@ mod header;
 mod indent;
 mod path;
 mod property;
+mod str;
 mod structure_block;
 mod walker;
 
+pub use self::str::Str;
 pub use path::Path;
 pub use property::{PHandle, Property, Reg, StrList};
 pub mod utils {
@@ -165,40 +167,6 @@ pub enum WalkOperation {
     StepOut,
     /// 结束遍历。
     Terminate,
-}
-
-/// 地址空间上的一个字符串，但未检查是否符合 utf-8 编码。
-#[derive(Clone, Copy)]
-pub struct Str<'a>(&'a [u8]);
-
-impl Str<'_> {
-    /// Converts to `&[u8]`.
-    #[inline]
-    pub fn as_bytes(&self) -> &[u8] {
-        self.0
-    }
-
-    /// Converts to [`str`].
-    #[inline]
-    pub fn as_str(&self) -> Result<&str, core::str::Utf8Error> {
-        core::str::from_utf8(self.0)
-    }
-
-    /// Converts to [`str`] without checking utf-8 validity.
-    ///
-    /// # Safety
-    ///
-    /// see [`core::str::from_utf8_unchecked`].
-    #[inline]
-    pub unsafe fn as_str_unchecked(&self) -> &str {
-        core::str::from_utf8_unchecked(self.0)
-    }
-}
-
-impl fmt::Display for Str<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        unsafe { self.as_str_unchecked() }.fmt(f)
-    }
 }
 
 #[repr(transparent)]
