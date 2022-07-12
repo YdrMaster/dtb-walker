@@ -1,6 +1,5 @@
-﻿use core::ops::Range;
-
-use crate::{is_aligned, U32BigEndian};
+﻿use crate::{is_aligned, U32BigEndian};
+use core::ops::Range;
 
 pub(crate) struct FdtHeader {
     magic: U32BigEndian,

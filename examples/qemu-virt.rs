@@ -1,9 +1,9 @@
-﻿use dtb_walker::{utils::indent, Dtb, DtbObj, HeaderError, WalkOperation};
-
-const DEVICE_TREE: &[u8] = include_bytes!("qemu-virt.dtb");
+﻿const DEVICE_TREE: &[u8] = include_bytes!("qemu-virt.dtb");
 const INDENT_WIDTH: usize = 4;
 
-fn main() {
+fn main() -> Result<(), String> {
+    use dtb_walker::{utils::indent, Dtb, DtbObj, HeaderError as E, WalkOperation as Op};
+
     let mut aligned = vec![0usize; DEVICE_TREE.len() / core::mem::size_of::<usize>()];
     unsafe {
         aligned
@@ -13,23 +13,20 @@ fn main() {
 
     let dtb = unsafe {
         Dtb::from_raw_parts_filtered(aligned.as_ptr() as _, |e| {
-            matches!(
-                e,
-                HeaderError::Misaligned(4) | HeaderError::LastCompVersion(16)
-            )
+            matches!(e, E::Misaligned(4) | E::LastCompVersion(16))
         })
     }
-    .unwrap();
+    .map_err(|e| format!("verify header failed: {e:?}"))?;
     dtb.walk(|path, obj| match obj {
         DtbObj::SubNode { name } => {
             println!("{}{path}/{name}", indent(path.level(), INDENT_WIDTH));
-            WalkOperation::StepInto
+            Op::StepInto
         }
         DtbObj::Property(prop) => {
             let indent = indent(path.level(), INDENT_WIDTH);
             println!("{indent}{prop:?}");
-            WalkOperation::StepOver
+            Op::StepOver
         }
     });
-    println!("ok");
+    Ok(())
 }
