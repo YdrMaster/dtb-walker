@@ -50,11 +50,11 @@ impl Dtb<'static> {
     /// 如果指针指向一个有效的 DTB 首部，其中描述的整个二进制对象会被切片。
     #[inline]
     pub unsafe fn from_raw_parts(ptr: *const u8) -> Result<Self, HeaderError> {
-        (*ptr.cast::<FdtHeader>()).verify(|_| true)?;
+        (*ptr.cast::<FdtHeader>()).verify(|_| false)?;
         Ok(Self::from_raw_parts_unchecked(ptr))
     }
 
-    /// 构造设备树二进制对象。
+    /// 构造设备树二进制对象，并可以选择接受某些不合规范的情况。
     ///
     /// # Safety
     ///
@@ -91,13 +91,16 @@ pub enum ConvertError {
 }
 
 impl<'a> Dtb<'a> {
-    /// 从内存切片安全地创建设备树二进制对象。
-    pub fn from_slice(slice: &'a [u8]) -> Result<Self, ConvertError> {
+    /// 从内存切片安全地创建设备树二进制对象，可以选择接受某些不合规范的情况。
+    pub fn from_slice_filtered(
+        slice: &'a [u8],
+        f: impl Fn(&HeaderError) -> bool,
+    ) -> Result<Self, ConvertError> {
         if slice.len() < mem::size_of::<FdtHeader>() {
             return Err(ConvertError::Truncated);
         }
         let header = unsafe { &*slice.as_ptr().cast::<FdtHeader>() };
-        match header.verify(|_| true) {
+        match header.verify(f) {
             Ok(()) => {
                 let len = header.totalsize.into_u32() as usize;
                 if len <= slice.len() {
@@ -108,6 +111,12 @@ impl<'a> Dtb<'a> {
             }
             Err(e) => Err(ConvertError::Header(e)),
         }
+    }
+
+    /// 从内存切片安全地创建设备树二进制对象。
+    #[inline]
+    pub fn from_slice(slice: &'a [u8]) -> Result<Self, ConvertError> {
+        Self::from_slice_filtered(slice, |_| false)
     }
 }
 
