@@ -2,7 +2,9 @@
 const INDENT_WIDTH: usize = 4;
 
 fn main() -> Result<(), String> {
-    use dtb_walker::{utils::indent, Dtb, DtbObj, HeaderError as E, WalkOperation as Op};
+    use dtb_walker::{
+        utils::indent, Dtb, DtbObj, HeaderError as E, SkipType::*, WalkOperation as Op,
+    };
 
     let mut aligned = vec![0usize; DEVICE_TREE.len() / core::mem::size_of::<usize>()];
     unsafe {
@@ -20,12 +22,12 @@ fn main() -> Result<(), String> {
     dtb.walk(|path, obj| match obj {
         DtbObj::SubNode { name } => {
             println!("{}{path}/{name}", indent(path.level(), INDENT_WIDTH));
-            Op::StepInto
+            Op::Access
         }
         DtbObj::Property(prop) => {
             let indent = indent(path.level(), INDENT_WIDTH);
             println!("{indent}{prop:?}");
-            Op::StepOver
+            Op::Skip(StepOver)
         }
     });
     Ok(())

@@ -1,5 +1,5 @@
 ﻿use crate::{
-    context::Cells, Context, DtbObj, Property, Reg, RegCfg, Str, StructureBlock as Blk,
+    context::Cells, Context, DtbObj, Property, Reg, RegCfg, SkipType, Str, StructureBlock as Blk,
     WalkOperation,
 };
 
@@ -23,6 +23,7 @@ impl Walker<'_> {
         f: &mut impl FnMut(&Context<'_>, DtbObj) -> WalkOperation,
         mut ctx: Option<Context>,
     ) -> bool {
+        use SkipType::*;
         use WalkOperation::*;
 
         let mut cells = Cells::DEFAULT;
@@ -43,13 +44,15 @@ impl Walker<'_> {
                             )
                         });
                         let ctx = match f(ctx_, DtbObj::SubNode { name }) {
-                            StepInto => Some(ctx_.grow(name, cells)),
-                            StepOver => None,
-                            StepOut => {
-                                ctx = None;
-                                None
-                            }
-                            Terminate => return false,
+                            Access => Some(ctx_.grow(name, cells)),
+                            Skip(ty) => match ty {
+                                StepOver => None,
+                                StepOut => {
+                                    ctx = None;
+                                    None
+                                }
+                                Terminate => return false,
+                            },
                         };
                         if !self.walk_inner(f, ctx) {
                             return false;
@@ -71,7 +74,7 @@ impl Walker<'_> {
                     let (value, tail) = tail.split_at((len + Blk::LEN - 1) / Blk::LEN);
                     // 如果当前子树需要解析
                     if let Some(ctx_) = ctx.as_ref() {
-                        let op = match self.prop_name(*nameoff) {
+                        let ty = match self.prop_name(*nameoff) {
                             b"#address-cells" if value.len() == 1 => {
                                 cells.address = value[0].into_u32();
                                 StepOver
@@ -84,7 +87,7 @@ impl Walker<'_> {
                                 cells.interrupt = value[0].into_u32();
                                 StepOver
                             }
-                            b"reg" if value.len() % (ctx_.cells().reg_size()) == 0 => f(
+                            b"reg" if value.len() % (ctx_.cells().reg_size()) == 0 => match f(
                                 ctx_,
                                 DtbObj::Property(Property::Reg(Reg {
                                     buf: value,
@@ -93,11 +96,19 @@ impl Walker<'_> {
                                         size_cells: ctx_.cells().size,
                                     },
                                 })),
-                            ),
-                            name => f(ctx_, DtbObj::Property(Property::new(name, value, len))),
+                            ) {
+                                Access => unreachable!(),
+                                Skip(ty) => ty,
+                            },
+                            name => {
+                                match f(ctx_, DtbObj::Property(Property::new(name, value, len))) {
+                                    Access => unreachable!(),
+                                    Skip(ty) => ty,
+                                }
+                            }
                         };
-                        match op {
-                            StepInto | StepOver => {}
+                        match ty {
+                            StepOver => {}
                             StepOut => ctx = None,
                             Terminate => return false,
                         };

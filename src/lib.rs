@@ -170,7 +170,13 @@ pub enum DtbObj<'a> {
 /// 遍历操作。
 pub enum WalkOperation {
     /// 进入子节点。
-    StepInto,
+    Access,
+    /// 跳过子节点。
+    Skip(SkipType),
+}
+
+/// 跳过子节点的方式。
+pub enum SkipType {
     /// 跳过子节点。
     StepOver,
     /// 跳过当前子树。
