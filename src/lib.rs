@@ -15,9 +15,9 @@
 #![no_std]
 #![deny(warnings, unstable_features, missing_docs)] // cancel this line during developing
 
+mod context;
 mod header;
 mod indent;
-mod path;
 mod property;
 mod str;
 mod structure_block;
@@ -25,13 +25,13 @@ mod tree_on_stack;
 mod walker;
 
 pub use self::str::Str;
-pub use path::Path;
 pub use property::{PHandle, Property, Reg, StrList};
 pub mod utils {
     //! 用于设备树解析、格式化的工具集。
 
     pub use crate::indent::indent;
 }
+pub use context::Context;
 pub use header::HeaderError;
 
 use core::{fmt, mem, slice};
@@ -129,7 +129,7 @@ impl Dtb<'_> {
     }
 
     /// 遍历。
-    pub fn walk(&self, mut f: impl FnMut(&Path<'_>, DtbObj) -> WalkOperation) {
+    pub fn walk(&self, mut f: impl FnMut(&Context<'_>, DtbObj) -> WalkOperation) {
         let header = self.header();
         let off_struct = header.off_dt_struct.into_u32() as usize;
         let len_struct = header.size_dt_struct.into_u32() as usize;
@@ -147,7 +147,7 @@ impl Dtb<'_> {
             },
             strings: &self.0[off_strings..][..len_strings],
         }
-        .walk_inner(&mut f, &Path::ROOT, RegCfg::DEFAULT, false);
+        .walk_inner(&mut f, Some(Context::ROOT));
     }
 
     #[inline]

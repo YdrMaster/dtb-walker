@@ -53,15 +53,3 @@ pub(crate) struct RegCfg {
     pub address_cells: u32,
     pub size_cells: u32,
 }
-
-impl RegCfg {
-    pub const DEFAULT: Self = Self {
-        address_cells: 2,
-        size_cells: 1,
-    };
-
-    #[inline]
-    pub(crate) fn item_size(&self) -> usize {
-        (self.address_cells + self.size_cells) as _
-    }
-}

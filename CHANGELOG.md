@@ -10,6 +10,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Change
+
+- 删除 `Path`，增加 `Context` 类型集中处理所有从父节点向子节点传递的信息。
+
+---
+
+- Removes `Path` Type, and adds `Context` to handle all information passed from parent node to child node.
+
 ## [0.2.0-alpha.2](https://github.com/YdrMaster/dtb-walker/releases/tag/0.2.0-alpha.2) - 2022-07-15
 
 ### Fixed
