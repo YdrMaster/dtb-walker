@@ -31,7 +31,7 @@ pub mod utils {
 
     pub use crate::indent::indent;
 }
-pub use context::Context;
+pub use context::{Context, ContextMeta};
 pub use header::HeaderError;
 
 use core::{fmt, mem, slice};
@@ -129,7 +129,7 @@ impl Dtb<'_> {
     }
 
     /// 遍历。
-    pub fn walk(&self, mut f: impl FnMut(&Context<'_, ()>, DtbObj) -> WalkOperation) {
+    pub fn walk<Meta: ContextMeta>(&self, root_meta: Meta) {
         let header = self.header();
         let off_struct = header.off_dt_struct.into_u32() as usize;
         let len_struct = header.size_dt_struct.into_u32() as usize;
@@ -147,7 +147,7 @@ impl Dtb<'_> {
             },
             strings: &self.0[off_strings..][..len_strings],
         }
-        .walk_inner(&mut f, Context::root(()));
+        .walk_inner(Context::root(root_meta));
     }
 
     #[inline]
@@ -156,21 +156,10 @@ impl Dtb<'_> {
     }
 }
 
-/// 设备树二进制小对象。
-pub enum DtbObj<'a> {
-    /// 子节点。
-    SubNode {
-        /// 节点名。
-        name: Str<'a>,
-    },
-    /// 一般属性。
-    Property(Property<'a>),
-}
-
 /// 遍历操作。
-pub enum WalkOperation {
+pub enum WalkOperation<T> {
     /// 进入子节点。
-    Access,
+    Access(T),
     /// 跳过子节点。
     Skip(SkipType),
 }

@@ -2,22 +2,25 @@
 use core::fmt;
 
 /// 遍历上下文。
-pub struct Context<'a, T>(Node<'a, Inner<'a, T>>);
+pub struct Context<'a, T>(pub Node<'a, Inner<'a, T>>);
 
+/// 遍历上下文的自定义部分。
 pub trait ContextMeta: Sized {
-    fn meet_child(&mut self, context: &Context<Self>, name: Str) -> WalkOperation;
+    /// 遭遇子节点。
+    fn meet_child(&mut self, context: &Context<Self>, name: Str) -> WalkOperation<Self>;
 
+    /// 遭遇属性。
     fn meet_prop(&mut self, context: &Context<Self>, prop: Property) -> SkipType;
 }
 
-struct Inner<'a, T> {
-    name: Str<'a>,
-    cells: Cells,
-    meta: T,
+pub struct Inner<'a, T> {
+    pub(crate) name: Str<'a>,
+    pub(crate) cells: Cells,
+    pub(crate) meta: T,
 }
 
-impl<T> Context<'_, T> {
-    pub(crate) const fn root(others: T) -> Self {
+impl<Meta> Context<'_, Meta> {
+    pub(crate) const fn root(others: Meta) -> Self {
         Self(Node::root(Inner {
             name: Str(b""),
             cells: Cells::DEFAULT,
@@ -41,17 +44,6 @@ impl<T> Context<'_, T> {
     #[inline]
     pub fn name(&self) -> Str {
         self.0.as_ref().name
-    }
-
-    /// 返回路径最后一级的节点名。
-    #[inline]
-    pub fn data(&mut self) -> &mut T {
-        &mut self.0.data.meta
-    }
-
-    #[inline]
-    pub(crate) fn cells(&self) -> Cells {
-        self.0.as_ref().cells
     }
 
     /// 将路径字符串格式化到 `buf` 中。
@@ -79,12 +71,30 @@ impl<T> Context<'_, T> {
 
 impl<'a, T> Context<'a, T> {
     #[inline]
-    pub(crate) fn grow(&'a self, name: Str<'a>, cells: Cells, others: T) -> Self {
-        Self(self.0.grow(Inner {
-            name,
-            cells,
-            meta: others,
-        }))
+    pub(crate) fn grow(&'a self, name: Str<'a>, cells: Cells, meta: T) -> Self {
+        Self(self.0.grow(Inner { name, cells, meta }))
+    }
+}
+
+impl<Meta: ContextMeta> Context<'_, Meta> {
+    #[allow(clippy::uninit_assumed_init)]
+    pub(crate) fn meet_child(&mut self, name: Str) -> WalkOperation<Meta> {
+        let mut meta = core::mem::replace(&mut self.0.data.meta, unsafe {
+            core::mem::MaybeUninit::uninit().assume_init()
+        });
+        let ans = meta.meet_child(self, name);
+        self.0.data.meta = meta;
+        ans
+    }
+
+    #[allow(clippy::uninit_assumed_init)]
+    pub(crate) fn meet_prop(&mut self, prop: Property) -> SkipType {
+        let mut meta = core::mem::replace(&mut self.0.data.meta, unsafe {
+            core::mem::MaybeUninit::uninit().assume_init()
+        });
+        let ans = meta.meet_prop(self, prop);
+        self.0.data.meta = meta;
+        ans
     }
 }
 

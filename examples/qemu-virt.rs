@@ -3,7 +3,7 @@ const INDENT_WIDTH: usize = 4;
 
 fn main() -> Result<(), String> {
     use dtb_walker::{
-        utils::indent, Dtb, DtbObj, HeaderError as E, SkipType::*, WalkOperation as Op,
+        utils::indent, ContextMeta, Dtb, HeaderError as E, SkipType::*, WalkOperation as Op,
     };
 
     let mut aligned = vec![0usize; DEVICE_TREE.len() / core::mem::size_of::<usize>()];
@@ -13,22 +13,34 @@ fn main() -> Result<(), String> {
             .copy_from_nonoverlapping(DEVICE_TREE.as_ptr() as _, aligned.len());
     }
 
+    struct Meta;
+
+    impl ContextMeta for Meta {
+        fn meet_child(
+            &mut self,
+            context: &dtb_walker::Context<Self>,
+            name: dtb_walker::Str,
+        ) -> Op<Self> {
+            println!("{}{context}/{name}", indent(context.level(), INDENT_WIDTH));
+            Op::Access(Self)
+        }
+
+        fn meet_prop(
+            &mut self,
+            context: &dtb_walker::Context<Self>,
+            prop: dtb_walker::Property,
+        ) -> dtb_walker::SkipType {
+            println!("{}{prop:?}", indent(context.level(), INDENT_WIDTH));
+            StepOver
+        }
+    }
+
     let dtb = unsafe {
         Dtb::from_raw_parts_filtered(aligned.as_ptr() as _, |e| {
             matches!(e, E::Misaligned(4) | E::LastCompVersion(16))
         })
     }
     .map_err(|e| format!("verify header failed: {e:?}"))?;
-    dtb.walk(|path, obj| match obj {
-        DtbObj::SubNode { name } => {
-            println!("{}{path}/{name}", indent(path.level(), INDENT_WIDTH));
-            Op::Access
-        }
-        DtbObj::Property(prop) => {
-            let indent = indent(path.level(), INDENT_WIDTH);
-            println!("{indent}{prop:?}");
-            Op::Skip(StepOver)
-        }
-    });
+    dtb.walk(Meta);
     Ok(())
 }
