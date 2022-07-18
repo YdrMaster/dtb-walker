@@ -129,12 +129,13 @@ impl Dtb<'_> {
     }
 
     /// 遍历。
-    pub fn walk<Meta: ContextMeta>(&self, root_meta: Meta) {
+    pub fn walk<Meta: ContextMeta>(&self, root_meta: Meta) -> Meta {
         let header = self.header();
         let off_struct = header.off_dt_struct.into_u32() as usize;
         let len_struct = header.size_dt_struct.into_u32() as usize;
         let off_strings = header.off_dt_strings.into_u32() as usize;
         let len_strings = header.size_dt_strings.into_u32() as usize;
+        let mut root = Context::root(root_meta);
         Walker {
             tail: unsafe {
                 slice::from_raw_parts(
@@ -147,7 +148,8 @@ impl Dtb<'_> {
             },
             strings: &self.0[off_strings..][..len_strings],
         }
-        .walk_inner(Context::root(root_meta));
+        .walk_inner(&mut root);
+        root.0.data.meta
     }
 
     #[inline]

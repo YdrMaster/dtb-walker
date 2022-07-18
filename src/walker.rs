@@ -1,6 +1,6 @@
 ﻿use crate::{
     context::{Cells, ContextMeta},
-    Context, Property, Reg, RegCfg, SkipType, Str, StructureBlock as Blk, WalkOperation,
+    Context, Property, Reg, RegCfg, SkipType, Str, StructureBlock as Blk, WalkOperation as Op,
 };
 
 /// 设备树递归结构。
@@ -18,9 +18,8 @@ impl Walker<'_> {
     }
 
     /// 深度优先遍历。如果返回 `false`，取消所有后续的遍历。
-    pub fn walk_inner<T: ContextMeta>(&mut self, mut ctx: Context<'_, T>) -> bool {
+    pub fn walk_inner<T: ContextMeta>(&mut self, ctx: &mut Context<'_, T>) -> bool {
         use SkipType::*;
-        use WalkOperation::*;
 
         loop {
             match self.tail.split_first() {
@@ -30,7 +29,7 @@ impl Walker<'_> {
                     let name_len = tail.iter().position(Blk::is_end_of_str).unwrap() + 1;
                     let (name, tail) = tail.split_at(name_len);
                     self.tail = tail;
-                    // 正确舍弃尾 '\0' 构造字符串
+                    // 舍弃尾 '\0' 构造字符串
                     let name = Str(unsafe {
                         core::slice::from_raw_parts(
                             name.as_ptr().cast::<u8>(),
@@ -38,14 +37,23 @@ impl Walker<'_> {
                         )
                     });
                     match ctx.meet_child(name) {
-                        Access(meta) => {
-                            if !self.walk_inner(ctx.grow(name, Cells::DEFAULT, meta)) {
+                        Op::Access(meta) => {
+                            let mut sub = ctx.grow(name, Cells::DEFAULT, meta);
+                            let ans = self.walk_inner(&mut sub);
+                            ctx.0.data.meta.escape(sub.0.data.meta);
+                            if !ans {
                                 return false;
                             }
                         }
-                        Skip(ty) => match ty {
-                            StepOver => self.skip_inner(),
+                        Op::Skip(ty) => match ty {
+                            StepOver => {
+                                // 跳出子节点
+                                self.skip_inner();
+                            }
                             StepOut => {
+                                // 跳出子节点
+                                self.skip_inner();
+                                // 跳出当前节点
                                 self.skip_inner();
                                 return true;
                             }
@@ -98,6 +106,7 @@ impl Walker<'_> {
                     match ctx.meet_prop(prop) {
                         StepOver => {}
                         StepOut => {
+                            // 跳出当前节点
                             self.skip_inner();
                             return true;
                         }

@@ -33,14 +33,18 @@ fn main() -> Result<(), String> {
             println!("{}{prop:?}", indent(context.level(), INDENT_WIDTH));
             StepOver
         }
+
+        fn escape(&mut self, _sub: Self) -> dtb_walker::SkipType {
+            StepOver
+        }
     }
 
-    let dtb = unsafe {
+    unsafe {
         Dtb::from_raw_parts_filtered(aligned.as_ptr() as _, |e| {
             matches!(e, E::Misaligned(4) | E::LastCompVersion(16))
         })
     }
-    .map_err(|e| format!("verify header failed: {e:?}"))?;
-    dtb.walk(Meta);
+    .map_err(|e| format!("verify header failed: {e:?}"))?
+    .walk(Meta);
     Ok(())
 }

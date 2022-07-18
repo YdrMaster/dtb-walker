@@ -11,6 +11,9 @@ pub trait ContextMeta: Sized {
 
     /// 遭遇属性。
     fn meet_prop(&mut self, context: &Context<Self>, prop: Property) -> SkipType;
+
+    /// 从子节点退出。
+    fn escape(&mut self, sub: Self) -> SkipType;
 }
 
 pub struct Inner<'a, T> {
