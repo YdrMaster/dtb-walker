@@ -21,6 +21,7 @@ mod path;
 mod property;
 mod str;
 mod structure_block;
+mod tree_on_stack;
 mod walker;
 
 pub use self::str::Str;

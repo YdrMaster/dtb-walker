@@ -54,15 +54,7 @@ impl Walker<'_> {
                             }
                             Terminate => return false,
                         };
-                        if !self.walk_inner(
-                            f,
-                            &Path {
-                                parent: Some(path),
-                                name,
-                            },
-                            sub_reg_cfg,
-                            escape,
-                        ) {
+                        if !self.walk_inner(f, &path.grow(name), sub_reg_cfg, escape) {
                             return false;
                         }
                     }
