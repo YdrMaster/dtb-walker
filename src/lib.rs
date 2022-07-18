@@ -147,7 +147,7 @@ impl Dtb<'_> {
             },
             strings: &self.0[off_strings..][..len_strings],
         }
-        .walk_inner(&mut f, Some(Context::root(())));
+        .walk_inner(&mut f, Context::root(()));
     }
 
     #[inline]

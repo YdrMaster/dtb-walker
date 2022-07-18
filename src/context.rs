@@ -1,13 +1,19 @@
-﻿use crate::{tree_on_stack::Node, Str};
+﻿use crate::{tree_on_stack::Node, Property, SkipType, Str, WalkOperation};
 use core::fmt;
 
 /// 遍历上下文。
 pub struct Context<'a, T>(Node<'a, Inner<'a, T>>);
 
+pub trait ContextMeta: Sized {
+    fn meet_child(&mut self, context: &Context<Self>, name: Str) -> WalkOperation;
+
+    fn meet_prop(&mut self, context: &Context<Self>, prop: Property) -> SkipType;
+}
+
 struct Inner<'a, T> {
     name: Str<'a>,
     cells: Cells,
-    others: T,
+    meta: T,
 }
 
 impl<T> Context<'_, T> {
@@ -15,7 +21,7 @@ impl<T> Context<'_, T> {
         Self(Node::root(Inner {
             name: Str(b""),
             cells: Cells::DEFAULT,
-            others,
+            meta: others,
         }))
     }
 
@@ -40,7 +46,7 @@ impl<T> Context<'_, T> {
     /// 返回路径最后一级的节点名。
     #[inline]
     pub fn data(&mut self) -> &mut T {
-        &mut self.0.data.others
+        &mut self.0.data.meta
     }
 
     #[inline]
@@ -77,7 +83,7 @@ impl<'a, T> Context<'a, T> {
         Self(self.0.grow(Inner {
             name,
             cells,
-            others,
+            meta: others,
         }))
     }
 }
