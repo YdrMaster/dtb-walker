@@ -2,18 +2,22 @@
 use core::fmt;
 
 /// 遍历上下文。
-pub struct Context<'a>(Node<'a, Inner<'a>>);
+pub struct Context<'a, T>(Node<'a, Inner<'a, T>>);
 
-struct Inner<'a> {
+struct Inner<'a, T> {
     name: Str<'a>,
     cells: Cells,
+    others: T,
 }
 
-impl Context<'_> {
-    pub(crate) const ROOT: Self = Context(Node::root(Inner {
-        name: Str(b""),
-        cells: Cells::DEFAULT,
-    }));
+impl<T> Context<'_, T> {
+    pub(crate) const fn root(others: T) -> Self {
+        Self(Node::root(Inner {
+            name: Str(b""),
+            cells: Cells::DEFAULT,
+            others,
+        }))
+    }
 
     /// 返回路径层数。定义根节点的子节点层数为 0。
     #[inline]
@@ -31,6 +35,12 @@ impl Context<'_> {
     #[inline]
     pub fn name(&self) -> Str {
         self.0.as_ref().name
+    }
+
+    /// 返回路径最后一级的节点名。
+    #[inline]
+    pub fn data(&mut self) -> &mut T {
+        &mut self.0.data.others
     }
 
     #[inline]
@@ -61,14 +71,18 @@ impl Context<'_> {
     }
 }
 
-impl<'a> Context<'a> {
+impl<'a, T> Context<'a, T> {
     #[inline]
-    pub(crate) fn grow(&'a self, name: Str<'a>, cells: Cells) -> Self {
-        Self(self.0.grow(Inner { name, cells }))
+    pub(crate) fn grow(&'a self, name: Str<'a>, cells: Cells, others: T) -> Self {
+        Self(self.0.grow(Inner {
+            name,
+            cells,
+            others,
+        }))
     }
 }
 
-impl fmt::Display for Context<'_> {
+impl<T> fmt::Display for Context<'_, T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fold((), |(), inner| {
             '/'.fmt(f)?;

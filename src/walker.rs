@@ -18,10 +18,10 @@ impl Walker<'_> {
     }
 
     /// 深度优先遍历。如果返回 `false`，取消所有后续的遍历。
-    pub fn walk_inner(
+    pub fn walk_inner<T: Default>(
         &mut self,
-        f: &mut impl FnMut(&Context<'_>, DtbObj) -> WalkOperation,
-        mut ctx: Option<Context>,
+        f: &mut impl FnMut(&Context<'_, T>, DtbObj) -> WalkOperation,
+        mut ctx: Option<Context<'_, T>>,
     ) -> bool {
         use SkipType::*;
         use WalkOperation::*;
@@ -44,7 +44,7 @@ impl Walker<'_> {
                             )
                         });
                         let ctx = match f(ctx_, DtbObj::SubNode { name }) {
-                            Access => Some(ctx_.grow(name, cells)),
+                            Access => Some(ctx_.grow(name, cells, T::default())),
                             Skip(ty) => match ty {
                                 StepOver => None,
                                 StepOut => {
