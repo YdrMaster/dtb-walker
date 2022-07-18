@@ -34,7 +34,7 @@ fn main() -> Result<(), String> {
             StepOver
         }
 
-        fn escape(&mut self, _sub: Self) -> dtb_walker::SkipType {
+        fn collect_from_child(&mut self, _sub: Self) -> dtb_walker::SkipType {
             StepOver
         }
     }

@@ -2,7 +2,7 @@
 use core::fmt;
 
 /// 遍历上下文。
-pub struct Context<'a, T>(pub Node<'a, Inner<'a, T>>);
+pub struct Context<'a, T>(pub(crate) Node<'a, Inner<'a, T>>);
 
 /// 遍历上下文的自定义部分。
 pub trait ContextMeta: Sized {
@@ -12,8 +12,8 @@ pub trait ContextMeta: Sized {
     /// 遭遇属性。
     fn meet_prop(&mut self, context: &Context<Self>, prop: Property) -> SkipType;
 
-    /// 从子节点退出。
-    fn escape(&mut self, sub: Self) -> SkipType;
+    /// 从已退出的子节点收集信息。
+    fn collect_from_child(&mut self, sub: Self) -> SkipType;
 }
 
 pub struct Inner<'a, T> {

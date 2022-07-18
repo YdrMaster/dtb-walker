@@ -42,7 +42,7 @@ fn main() -> Result<(), String> {
             StepOver
         }
 
-        fn escape(&mut self, sub: Self) -> SkipType {
+        fn collect_from_child(&mut self, sub: Self) -> SkipType {
             match self {
                 Meta::Root(x) => match sub {
                     Meta::Cpus(n) => {

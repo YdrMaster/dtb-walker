@@ -39,10 +39,22 @@ impl Walker<'_> {
                     match ctx.meet_child(name) {
                         Op::Access(meta) => {
                             let mut sub = ctx.grow(name, Cells::DEFAULT, meta);
-                            let ans = self.walk_inner(&mut sub);
-                            ctx.0.data.meta.escape(sub.0.data.meta);
-                            if !ans {
+                            // 直接退出
+                            if !self.walk_inner(&mut sub) {
                                 return false;
+                            }
+                            // 收集后如何处置
+                            match ctx.0.data.meta.collect_from_child(sub.0.data.meta) {
+                                StepOver => {}
+                                StepOut => {
+                                    // 跳出当前节点
+                                    self.skip_inner();
+                                    return true;
+                                }
+                                Terminate => {
+                                    // 直接退出
+                                    return false;
+                                }
                             }
                         }
                         Op::Skip(ty) => match ty {
@@ -57,7 +69,10 @@ impl Walker<'_> {
                                 self.skip_inner();
                                 return true;
                             }
-                            Terminate => return false,
+                            Terminate => {
+                                // 直接退出
+                                return false;
+                            }
                         },
                     }
                 }
@@ -110,7 +125,10 @@ impl Walker<'_> {
                             self.skip_inner();
                             return true;
                         }
-                        Terminate => return false,
+                        Terminate => {
+                            // 直接退出
+                            return false;
+                        }
                     };
                 }
                 // 跳过
