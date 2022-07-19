@@ -6,20 +6,37 @@ pub struct Context<'a, T>(pub(crate) Node<'a, Inner<'a, T>>);
 
 /// 遍历上下文的自定义部分。
 pub trait ContextMeta: Sized {
-    /// 遭遇子节点。
-    fn meet_child(&mut self, context: &Context<Self>, name: Str) -> WalkOperation<Self>;
+    /// 遍历到一个子节点。
+    ///
+    /// - `_ctx`: 当前节点的上下文
+    /// - `_name`: 子节点名
+    #[inline]
+    fn meet_child(&mut self, _ctx: &Context<Self>, _name: Str) -> WalkOperation<Self> {
+        WalkOperation::Skip(SkipType::StepOver)
+    }
 
-    /// 遭遇属性。
-    fn meet_prop(&mut self, context: &Context<Self>, prop: Property) -> SkipType;
+    /// 遍历到一个属性。
+    ///
+    /// - `_ctx`: 当前节点的上下文
+    /// - `_prop`: 属性对象
+    #[inline]
+    fn meet_prop(&mut self, _ctx: &Context<Self>, _prop: Property) -> SkipType {
+        SkipType::StepOver
+    }
 
     /// 从已退出的子节点收集信息。
-    fn collect_from_child(&mut self, sub: Self) -> SkipType;
+    ///
+    /// - `_child`: 子节点上下文元数据
+    #[inline]
+    fn collect_from_child(&mut self, _child: Self) -> SkipType {
+        SkipType::StepOver
+    }
 }
 
-pub struct Inner<'a, T> {
-    pub(crate) name: Str<'a>,
-    pub(crate) cells: Cells,
-    pub(crate) meta: T,
+pub(crate) struct Inner<'a, T> {
+    pub name: Str<'a>,
+    pub cells: Cells,
+    pub meta: T,
 }
 
 impl<Meta> Context<'_, Meta> {
@@ -37,13 +54,13 @@ impl<Meta> Context<'_, Meta> {
         self.0.level()
     }
 
-    /// 如果这是根节点的路径则返回 `true`。
+    /// 如果当前节点是根节点则返回 `true`。
     #[inline]
     pub fn is_root(&self) -> bool {
         self.0.is_root()
     }
 
-    /// 返回路径最后一级的节点名。
+    /// 返回当前节点名字。
     #[inline]
     pub fn name(&self) -> Str {
         self.0.as_ref().name

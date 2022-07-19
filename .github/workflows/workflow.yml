@@ -23,8 +23,13 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-      - name: Run example
+      - name: Run print-all
         uses: actions-rs/cargo@v1
         with:
           command: run
           args: --release --example print-all
+      - name: Run board-info-detecting
+        uses: actions-rs/cargo@v1
+        with:
+          command: run
+          args: --release --example detect-smp
