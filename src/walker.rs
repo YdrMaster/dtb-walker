@@ -1,5 +1,7 @@
-﻿use crate::{DtbObj, Path, Property, Reg, RegCfg, Str, StructureBlock as Blk, WalkOperation};
-use core::slice;
+﻿use crate::{
+    context::Cells, Context, DtbObj, Property, Reg, RegCfg, Str, StructureBlock as Blk,
+    WalkOperation,
+};
 
 /// 设备树递归结构。
 pub(crate) struct Walker<'a> {
@@ -18,14 +20,12 @@ impl Walker<'_> {
     /// 深度优先遍历。如果返回 `false`，取消所有后续的遍历。
     pub fn walk_inner(
         &mut self,
-        f: &mut impl FnMut(&Path<'_>, DtbObj) -> WalkOperation,
-        path: &Path<'_>,
-        reg_cfg: RegCfg,
-        mut escape: bool,
+        f: &mut impl FnMut(&Context<'_>, DtbObj) -> WalkOperation,
+        mut ctx: Option<Context>,
     ) -> bool {
         use WalkOperation::*;
 
-        let mut sub_reg_cfg = RegCfg::DEFAULT;
+        let mut cells = Cells::DEFAULT;
         loop {
             match self.tail.split_first() {
                 // 子节点
@@ -34,37 +34,29 @@ impl Walker<'_> {
                     let name_len = tail.iter().position(Blk::is_end_of_str).unwrap() + 1;
                     let (name, tail) = tail.split_at(name_len);
                     self.tail = tail;
-                    if escape {
-                        // 如果当前子树已选跳过，不可能再选择终止
-                        assert!(self.walk_inner(f, path, sub_reg_cfg, true));
-                    } else {
+                    if let Some(ctx_) = ctx.as_ref() {
                         // 正确舍弃尾 '\0'
                         let name = Str(unsafe {
-                            slice::from_raw_parts(
+                            core::slice::from_raw_parts(
                                 name.as_ptr().cast::<u8>(),
                                 name.len() * Blk::LEN - name.last().unwrap().str_tail_zero(),
                             )
                         });
-                        let escape = match f(path, DtbObj::SubNode { name }) {
-                            StepInto => false,
-                            StepOver => true,
+                        let ctx = match f(ctx_, DtbObj::SubNode { name }) {
+                            StepInto => Some(ctx_.grow(name, cells)),
+                            StepOver => None,
                             StepOut => {
-                                escape = true;
-                                true
+                                ctx = None;
+                                None
                             }
                             Terminate => return false,
                         };
-                        if !self.walk_inner(
-                            f,
-                            &Path {
-                                parent: Some(path),
-                                name,
-                            },
-                            sub_reg_cfg,
-                            escape,
-                        ) {
+                        if !self.walk_inner(f, ctx) {
                             return false;
                         }
+                    } else {
+                        // 如果当前子树已选跳过，不可能再选择终止
+                        assert!(self.walk_inner(f, None));
                     }
                 }
                 // 当前节点结束
@@ -78,28 +70,35 @@ impl Walker<'_> {
                     let len = len.into_u32() as usize;
                     let (value, tail) = tail.split_at((len + Blk::LEN - 1) / Blk::LEN);
                     // 如果当前子树需要解析
-                    if !escape {
+                    if let Some(ctx_) = ctx.as_ref() {
                         let op = match self.prop_name(*nameoff) {
                             b"#address-cells" if value.len() == 1 => {
-                                sub_reg_cfg.address_cells = value[0].into_u32();
+                                cells.address = value[0].into_u32();
                                 StepOver
                             }
                             b"#size-cells" if value.len() == 1 => {
-                                sub_reg_cfg.size_cells = value[0].into_u32();
+                                cells.size = value[0].into_u32();
                                 StepOver
                             }
-                            b"reg" if value.len() % reg_cfg.item_size() == 0 => f(
-                                path,
+                            b"#interrupt-cells" if value.len() == 1 => {
+                                cells.interrupt = value[0].into_u32();
+                                StepOver
+                            }
+                            b"reg" if value.len() % (ctx_.cells().reg_size()) == 0 => f(
+                                ctx_,
                                 DtbObj::Property(Property::Reg(Reg {
                                     buf: value,
-                                    cfg: reg_cfg,
+                                    cfg: RegCfg {
+                                        address_cells: ctx_.cells().address,
+                                        size_cells: ctx_.cells().size,
+                                    },
                                 })),
                             ),
-                            name => f(path, DtbObj::Property(Property::new(name, value, len))),
+                            name => f(ctx_, DtbObj::Property(Property::new(name, value, len))),
                         };
                         match op {
                             StepInto | StepOver => {}
-                            StepOut => escape = true,
+                            StepOut => ctx = None,
                             Terminate => return false,
                         };
                     }

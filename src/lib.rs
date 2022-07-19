@@ -15,22 +15,23 @@
 #![no_std]
 #![deny(warnings, unstable_features, missing_docs)] // cancel this line during developing
 
+mod context;
 mod header;
 mod indent;
-mod path;
 mod property;
 mod str;
 mod structure_block;
+mod tree_on_stack;
 mod walker;
 
 pub use self::str::Str;
-pub use path::Path;
 pub use property::{PHandle, Property, Reg, StrList};
 pub mod utils {
     //! 用于设备树解析、格式化的工具集。
 
     pub use crate::indent::indent;
 }
+pub use context::Context;
 pub use header::HeaderError;
 
 use core::{fmt, mem, slice};
@@ -50,11 +51,11 @@ impl Dtb<'static> {
     /// 如果指针指向一个有效的 DTB 首部，其中描述的整个二进制对象会被切片。
     #[inline]
     pub unsafe fn from_raw_parts(ptr: *const u8) -> Result<Self, HeaderError> {
-        (*ptr.cast::<FdtHeader>()).verify(|_| true)?;
+        (*ptr.cast::<FdtHeader>()).verify(|_| false)?;
         Ok(Self::from_raw_parts_unchecked(ptr))
     }
 
-    /// 构造设备树二进制对象。
+    /// 构造设备树二进制对象，并可以选择接受某些不合规范的情况。
     ///
     /// # Safety
     ///
@@ -91,13 +92,16 @@ pub enum ConvertError {
 }
 
 impl<'a> Dtb<'a> {
-    /// 从内存切片安全地创建设备树二进制对象。
-    pub fn from_slice(slice: &'a [u8]) -> Result<Self, ConvertError> {
+    /// 从内存切片安全地创建设备树二进制对象，可以选择接受某些不合规范的情况。
+    pub fn from_slice_filtered(
+        slice: &'a [u8],
+        f: impl Fn(&HeaderError) -> bool,
+    ) -> Result<Self, ConvertError> {
         if slice.len() < mem::size_of::<FdtHeader>() {
             return Err(ConvertError::Truncated);
         }
         let header = unsafe { &*slice.as_ptr().cast::<FdtHeader>() };
-        match header.verify(|_| true) {
+        match header.verify(f) {
             Ok(()) => {
                 let len = header.totalsize.into_u32() as usize;
                 if len <= slice.len() {
@@ -109,6 +113,12 @@ impl<'a> Dtb<'a> {
             Err(e) => Err(ConvertError::Header(e)),
         }
     }
+
+    /// 从内存切片安全地创建设备树二进制对象。
+    #[inline]
+    pub fn from_slice(slice: &'a [u8]) -> Result<Self, ConvertError> {
+        Self::from_slice_filtered(slice, |_| false)
+    }
 }
 
 impl Dtb<'_> {
@@ -119,7 +129,7 @@ impl Dtb<'_> {
     }
 
     /// 遍历。
-    pub fn walk(&self, mut f: impl FnMut(&Path<'_>, DtbObj) -> WalkOperation) {
+    pub fn walk(&self, mut f: impl FnMut(&Context<'_>, DtbObj) -> WalkOperation) {
         let header = self.header();
         let off_struct = header.off_dt_struct.into_u32() as usize;
         let len_struct = header.size_dt_struct.into_u32() as usize;
@@ -137,7 +147,7 @@ impl Dtb<'_> {
             },
             strings: &self.0[off_strings..][..len_strings],
         }
-        .walk_inner(&mut f, &Path::ROOT, RegCfg::DEFAULT, false);
+        .walk_inner(&mut f, Some(Context::ROOT));
     }
 
     #[inline]
